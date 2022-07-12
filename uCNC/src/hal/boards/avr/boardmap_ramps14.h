@@ -74,6 +74,7 @@ extern "C"
 #define LIMIT_Y2_BIT 0	// assigns LIMIT_Y2 pin
 #define LIMIT_Y2_PORT J // assigns LIMIT_Y2 port
 #define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR
+#ifndef AVR_DEBUG
 #define LIMIT_Z_BIT 3	// assigns LIMIT_Z pin
 #define LIMIT_Z_PORT D	// assigns LIMIT_Z port
 #define LIMIT_Z_ISR -4	// assigns LIMIT_Z ISR
@@ -82,6 +83,7 @@ extern "C"
 #define PROBE_BIT 2
 #define PROBE_PORT D
 #define PROBE_ISR -3
+#endif
 
 // Setup com pins
 #define RX_BIT 0
