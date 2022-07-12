@@ -48,10 +48,6 @@
 #include <avr/eeprom.h>
 #include <avr/cpufunc.h>
 
-#ifndef AVR_DEBUG
-#include "avr8-stub.h"
-#endif
-
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
@@ -425,9 +421,6 @@ void mcu_init(void)
 	MCUSR &= ~(1 << WDRF);
 	WDTCSR |= (1 << WDCE) | (1 << WDE);
 	WDTCSR = 0x00;
-	#else
-	debug_init();
-	breakpoint();
 	#endif
 
 	// configure all pins
@@ -1142,6 +1135,11 @@ void mcu_init(void)
 	mcu_disable_probe_isr();
 	// enable interrupts
 	mcu_enable_global_isr();
+
+	#ifdef AVR_DEBUG
+	debug_init();
+	breakpoint();
+	#endif
 }
 
 // IO functions
