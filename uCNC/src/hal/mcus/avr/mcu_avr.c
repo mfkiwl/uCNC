@@ -427,6 +427,7 @@ void mcu_init(void)
 	WDTCSR = 0x00;
 	#else
 	debug_init();
+	breakpoint();
 	#endif
 
 	// configure all pins
