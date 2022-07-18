@@ -41,6 +41,80 @@
 static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
+#define ESP8266_SERIAL_BUFFER_SIZE 255
+typedef struct esp_serial_buffer_
+{
+	uint8_t buffer[ESP8266_SERIAL_BUFFER_SIZE];
+	uint8_t len;
+	uint8_t pos;
+} esp_serial_buffer_t;
+
+static esp_serial_buffer_t tx_buffer;
+static esp_serial_buffer_t rx_buffer;
+
+// device 2 PC
+long esp_serial_readbytes(uint8_t *buffer, size_t len)
+{
+	long outlen = MIN(tx_buffer.len, len);
+	memcpy(buffer, &tx_buffer.buffer[tx_buffer.pos], outlen);
+	if (outlen == tx_buffer.len)
+	{
+		memset(&tx_buffer, 0, sizeof(esp_serial_buffer_t));
+	}
+	else
+	{
+		tx_buffer.pos = outlen;
+	}
+
+	return outlen;
+}
+// baudrate
+long esp_serial_baudrate(void)
+{
+	return BAUDRATE;
+}
+// device 2 PC available
+int esp_serial_available(void)
+{
+	return tx_buffer.len;
+}
+// PC 2 device flush
+void esp_com_flush(void)
+{
+	while (rx_buffer.pos != rx_buffer.len)
+	{
+		mcu_com_rx_cb((unsigned char)rx_buffer.buffer[rx_buffer.pos]);
+		rx_buffer.pos++;
+	}
+
+	memset(&rx_buffer, 0, sizeof(esp_serial_buffer_t));
+}
+
+// PC 2 device
+size_t esp_serial_write(uint8_t d)
+{
+	if (rx_buffer.len >= ESP8266_SERIAL_BUFFER_SIZE)
+	{
+		return 0;
+	}
+
+	rx_buffer.buffer[rx_buffer.len++] = (unsigned char)d;
+	return 1;
+}
+
+// PC 2 device
+void esp_serial_print(const char *data)
+{
+	int len = strlen(data);
+	int cpylen = len;
+	if (len > rx_buffer.len + ESP8266_SERIAL_BUFFER_SIZE)
+	{
+		cpylen = ESP8266_SERIAL_BUFFER_SIZE - rx_buffer.len;
+	}
+	memcpy(&rx_buffer.buffer, data, cpylen);
+	rx_buffer.len += cpylen;
+}
+
 void esp8266_uart_init(int baud);
 char esp8266_uart_read(void);
 void esp8266_uart_write(char c);
@@ -50,10 +124,10 @@ void esp8266_uart_flush(void);
 
 #ifdef ENABLE_WIFI
 void esp8266_wifi_init(int baud);
-char esp8266_wifi_read(void);
-void esp8266_wifi_write(char c);
-bool esp8266_wifi_rx_ready(void);
-bool esp8266_wifi_tx_ready(void);
+// char esp8266_wifi_read(void);
+// void esp8266_wifi_write(char c);
+// bool esp8266_wifi_rx_ready(void);
+// bool esp8266_wifi_tx_ready(void);
 void esp8266_wifi_flush(void);
 bool esp8266_wifi_clientok(void);
 #endif
@@ -68,7 +142,7 @@ void esp8266_eeprom_flush(void);
 ETSTimer esp8266_rtc_timer;
 
 uint8_t esp8266_pwm[16];
-static IRAM_ATTR void mcu_gen_pwm(void)
+static ICACHE_RAM_ATTR void mcu_gen_pwm(void)
 {
 	static uint8_t pwm_counter = 0;
 	// software PWM
@@ -275,7 +349,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 
 static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
-static IRAM_ATTR void mcu_gen_step(void)
+static ICACHE_RAM_ATTR void mcu_gen_step(void)
 {
 	if (mcu_step_reload)
 	{
@@ -292,33 +366,33 @@ static IRAM_ATTR void mcu_gen_step(void)
 	}
 }
 
-IRAM_ATTR void mcu_din_isr(void)
+ICACHE_RAM_ATTR void mcu_din_isr(void)
 {
 	io_inputs_isr();
 }
 
-IRAM_ATTR void mcu_probe_isr(void)
+ICACHE_RAM_ATTR void mcu_probe_isr(void)
 {
 	io_probe_isr();
 }
 
-IRAM_ATTR void mcu_limits_isr(void)
+ICACHE_RAM_ATTR void mcu_limits_isr(void)
 {
 	io_limits_isr();
 }
 
-IRAM_ATTR void mcu_controls_isr(void)
+ICACHE_RAM_ATTR void mcu_controls_isr(void)
 {
 	io_controls_isr();
 }
 
-IRAM_ATTR void mcu_rtc_isr(void *arg)
+ICACHE_RAM_ATTR void mcu_rtc_isr(void *arg)
 {
 	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
 }
 
-IRAM_ATTR void mcu_itp_isr(void)
+ICACHE_RAM_ATTR void mcu_itp_isr(void)
 {
 	// mcu_disable_global_isr();
 	// static bool resetstep = false;
@@ -380,6 +454,8 @@ IRAM_ATTR void mcu_itp_isr(void)
 
 static void mcu_usart_init(void)
 {
+	memset(&tx_buffer, 0, sizeof(esp_serial_buffer_t));
+	memset(&rx_buffer, 0, sizeof(esp_serial_buffer_t));
 	esp8266_uart_init(BAUDRATE);
 #ifdef ENABLE_WIFI
 	esp8266_wifi_init(BAUDRATE);
@@ -1128,18 +1204,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-#ifdef ENABLE_WIFI
-	if (esp8266_wifi_clientok())
-	{
-		return (esp8266_uart_tx_ready() && esp8266_wifi_tx_ready());
-	}
-	else
-	{
-		return esp8266_uart_tx_ready();
-	}
-#else
-	return esp8266_uart_tx_ready();
-#endif
+	return (tx_buffer.len < ESP8266_SERIAL_BUFFER_SIZE);
 }
 #endif
 
@@ -1152,7 +1217,7 @@ bool mcu_rx_ready(void)
 #ifdef ENABLE_WIFI
 	if (esp8266_wifi_clientok())
 	{
-		return (esp8266_wifi_rx_ready());
+		return (rx_buffer.len != rx_buffer.pos);
 	}
 	else
 	{
@@ -1181,7 +1246,8 @@ void mcu_putc(char c)
 #endif
 	esp8266_uart_write(c);
 #ifdef ENABLE_WIFI
-	esp8266_wifi_write(c);
+	tx_buffer.buffer[tx_buffer.len] = c;
+	tx_buffer.len++;
 #endif
 }
 #endif
@@ -1204,7 +1270,15 @@ char mcu_getc(void)
 #ifdef ENABLE_WIFI
 	if (esp8266_wifi_clientok())
 	{
-		return esp8266_wifi_read();
+		if (rx_buffer.pos == rx_buffer.len)
+		{
+			memset(&rx_buffer, 0, sizeof(esp_serial_buffer_t));
+			return 0;
+		}
+		else
+		{
+			return rx_buffer.buffer[rx_buffer.pos++];
+		}
 	}
 	else
 	{
@@ -1263,7 +1337,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
-		(*prescaller)+=1;
+		(*prescaller) += 1;
 		totalticks >>= 1;
 	}
 
@@ -1329,12 +1403,16 @@ void mcu_dotasks(void)
 #if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
 	esp8266_uart_flush();
 #endif
+#ifdef ENABLE_WIFI
+	esp8266_wifi_update();
+#endif
 #ifdef ENABLE_SYNC_RX
 	while (mcu_rx_ready())
 	{
 		unsigned char c = mcu_getc();
 		mcu_com_rx_cb(c);
 	}
+
 #endif
 }
 
