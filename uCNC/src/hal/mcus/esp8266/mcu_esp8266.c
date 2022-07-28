@@ -121,16 +121,7 @@ void esp8266_uart_write(char c);
 bool esp8266_uart_rx_ready(void);
 bool esp8266_uart_tx_ready(void);
 void esp8266_uart_flush(void);
-
-#ifdef ENABLE_WIFI
-void esp8266_wifi_init(int baud);
-// char esp8266_wifi_read(void);
-// void esp8266_wifi_write(char c);
-// bool esp8266_wifi_rx_ready(void);
-// bool esp8266_wifi_tx_ready(void);
-void esp8266_wifi_flush(void);
-bool esp8266_wifi_clientok(void);
-#endif
+void esp8266_uart_process(void);
 
 #ifndef RAM_ONLY_SETTINGS
 void esp8266_eeprom_init(int size);
@@ -457,9 +448,6 @@ static void mcu_usart_init(void)
 	memset(&tx_buffer, 0, sizeof(esp_serial_buffer_t));
 	memset(&rx_buffer, 0, sizeof(esp_serial_buffer_t));
 	esp8266_uart_init(BAUDRATE);
-#ifdef ENABLE_WIFI
-	esp8266_wifi_init(BAUDRATE);
-#endif
 }
 /**
  * initializes the mcu
@@ -1204,7 +1192,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-	return (tx_buffer.len < ESP8266_SERIAL_BUFFER_SIZE);
+	return esp8266_uart_tx_ready();
 }
 #endif
 
@@ -1214,18 +1202,7 @@ bool mcu_tx_ready(void)
 #ifndef mcu_rx_ready
 bool mcu_rx_ready(void)
 {
-#ifdef ENABLE_WIFI
-	if (esp8266_wifi_clientok())
-	{
-		return (rx_buffer.len != rx_buffer.pos);
-	}
-	else
-	{
-		return (esp8266_uart_rx_ready());
-	}
-#else
 	return esp8266_uart_rx_ready();
-#endif
 }
 #endif
 
@@ -1244,11 +1221,8 @@ void mcu_putc(char c)
 	while (!mcu_tx_ready())
 		;
 #endif
+
 	esp8266_uart_write(c);
-#ifdef ENABLE_WIFI
-	tx_buffer.buffer[tx_buffer.len] = c;
-	tx_buffer.len++;
-#endif
 }
 #endif
 
@@ -1267,26 +1241,7 @@ char mcu_getc(void)
 		;
 #endif
 
-#ifdef ENABLE_WIFI
-	if (esp8266_wifi_clientok())
-	{
-		if (rx_buffer.pos == rx_buffer.len)
-		{
-			memset(&rx_buffer, 0, sizeof(esp_serial_buffer_t));
-			return 0;
-		}
-		else
-		{
-			return rx_buffer.buffer[rx_buffer.pos++];
-		}
-	}
-	else
-	{
-		return esp8266_uart_read();
-	}
-#else
 	return esp8266_uart_read();
-#endif
 }
 #endif
 
@@ -1399,21 +1354,7 @@ void mcu_dotasks(void)
 {
 	// reset WDT
 	system_soft_wdt_feed();
-
-#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
-	esp8266_uart_flush();
-#endif
-#ifdef ENABLE_WIFI
-	esp8266_wifi_update();
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
-	{
-		unsigned char c = mcu_getc();
-		mcu_com_rx_cb(c);
-	}
-
-#endif
+	esp8266_uart_process();
 }
 
 // Non volatile memory
