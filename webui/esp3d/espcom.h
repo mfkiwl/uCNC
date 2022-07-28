@@ -43,6 +43,7 @@ public:
     static void println (String & data, tpipe output, ESPResponseStream  *espresponse = NULL);
     static void println (const char * data, tpipe output, ESPResponseStream  *espresponse = NULL);
 	static bool hasClients (void);
+	static int writeAvailable(void);
     static uint8_t current_socket_id;
 #ifdef TCP_IP_DATA_FEATURE
     static void processFromTCP2Serial();

@@ -24,34 +24,9 @@
 #include <stdbool.h>
 
 #ifdef ENABLE_WIFI
-#include <ESP8266WiFi.h>
-#include <Hash.h>
-#include <DNSServer.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266HTTPUpdateServer.h>
-#include <WiFiManager.h>
-
-#ifndef WIFI_PORT
-#define WIFI_PORT 23
-#endif
-
-#ifndef WIFI_USER
-#define WIFI_USER "admin"
-#endif
-
-#ifndef WIFI_PASS
-#define WIFI_PASS "pass"
-#endif
-
-ESP8266WebServer httpServer(80);
-ESP8266HTTPUpdateServer httpUpdater;
-const char *update_path = "/firmware";
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
-#define MAX_SRV_CLIENTS 1
-WiFiServer server(WIFI_PORT);
-WiFiClient serverClient;
-WiFiManager wifiManager;
+#include "../../../../../webui/esp3d/esp3d.h"
+#include "../../../../../webui/esp3d/espcom.h"
+Esp3D webuiserver;
 #endif
 
 #ifndef ESP8266_BUFFER_SIZE
@@ -63,54 +38,58 @@ static uint8_t esp8266_tx_buffer_counter;
 
 extern "C"
 {
+#ifdef ENABLE_WIFI
 	bool esp8266_wifi_clientok(void)
 	{
-		if (server.hasClient())
-		{
-			if (serverClient)
-			{
-				if (serverClient.connected())
-				{
-					serverClient.stop();
-				}
-			}
-			serverClient = server.available();
-			serverClient.println("[MSG: New client connected]\r\n");
-			return false;
-		}
-		else if (serverClient)
-		{
-			if (serverClient.connected())
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return ESPCOM::hasClients();
 	}
+
+	// device 2 PC
+	long esp_serial_readbytes(uint8_t *buffer, size_t len)
+	{
+		uint8_t length = esp8266_tx_buffer_counter;
+		memcpy(buffer, esp8266_tx_buffer, esp8266_tx_buffer_counter);
+
+		return Serial.readBytes(buffer, len);
+	}
+	// baudrate
+	long esp_serial_baudrate(void)
+	{
+		return BAUDRATE;
+	}
+	// device 2 PC available
+	int esp_serial_available(void)
+	{
+		return esp8266_tx_buffer_counter;
+	}
+	// PC 2 device flush
+	void esp_com_flush(void)
+	{
+		// nothing to be done
+	}
+	// PC 2 device
+	size_t esp_serial_write(uint8_t d)
+	{
+		mcu_com_rx_cb((unsigned char)d);
+		return d;
+	}
+	// PC 2 device
+	void esp_serial_print(const char *data)
+	{
+		while (*data)
+		{
+			mcu_com_rx_cb((unsigned char)*data);
+			data++;
+		}
+	}
+#endif
 
 	void esp8266_uart_init(int baud)
 	{
 		Serial.begin(baud);
-#ifdef WIFI_DEBUG
-		wifiManager.setDebugOutput(true);
-#else
-		wifiManager.setDebugOutput(false);
+#ifdef ENABLE_WIFI
+		webuiserver.begin();
 #endif
-		wifiManager.setConfigPortalBlocking(false);
-		wifiManager.setConfigPortalTimeout(30);
-		if (!wifiManager.autoConnect("ESP8266"))
-		{
-			Serial.println("[MSG: WiFi manager up]");
-			Serial.println("[MSG: Setup page @ 192.168.4.1]");
-		}
-
-		server.begin();
-		server.setNoDelay(true);
-		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-		httpServer.begin();
-		WiFi.setSleepMode(WIFI_NONE_SLEEP);
-
 		esp8266_tx_buffer_counter = 0;
 	}
 
@@ -118,11 +97,12 @@ extern "C"
 	{
 		Serial.println(esp8266_tx_buffer);
 		Serial.flush();
-		if (esp8266_wifi_clientok())
+#ifdef ENABLE_WIFI
+		if (ESPCOM::hasClients())
 		{
-			serverClient.println(esp8266_tx_buffer);
-			serverClient.flush();
+			ESPCOM::println(esp8266_tx_buffer, DEFAULT_PRINTER_PIPE);
 		}
+#endif
 		esp8266_tx_buffer_counter = 0;
 	}
 
@@ -158,11 +138,12 @@ extern "C"
 	bool esp8266_uart_rx_ready(void)
 	{
 		bool wifiready = false;
-		if (esp8266_wifi_clientok())
+#ifdef ENABLE_WIFI
+		if (ESPCOM::hasClients())
 		{
-			wifiready = (serverClient.available() > 0);
+			wifiready = (ESPCOM::writeAvailable() > 0);
 		}
-
+#endif
 		return ((Serial.available() > 0) || wifiready);
 	}
 
@@ -178,17 +159,9 @@ extern "C"
 			system_soft_wdt_feed();
 			mcu_com_rx_cb((unsigned char)Serial.read());
 		}
-
-		wifiManager.process();
-		httpServer.handleClient();
-		if (esp8266_wifi_clientok())
-		{
-			while (serverClient.available() > 0)
-			{
-				system_soft_wdt_feed();
-				mcu_com_rx_cb((unsigned char)serverClient.read());
-			}
-		}
+#ifdef ENABLE_WIFI
+		webuiserver.process();
+#endif
 	}
 }
 

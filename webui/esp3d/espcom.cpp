@@ -42,18 +42,38 @@ WiFiClient serverClients[MAX_SRV_CLIENTS];
 
 bool ESPCOM::block_2_printer = false;
 
+#ifdef USE_INTERNAL_SERIAL
 // device 2 PC
-extern "C" long esp_serial_readbytes(uint8_t *buffer, size_t len);
+extern "C" long __attribute__((weak)) esp_serial_readbytes(uint8_t *buffer, size_t len)
+{
+	return Serial.readBytes(buffer, len);
+}
 // baudrate
-extern "C" long esp_serial_baudrate(void);
+extern "C" long __attribute__((weak)) esp_serial_baudrate(void)
+{
+	return Serial.baudRate();
+}
 // device 2 PC available
-extern "C" int esp_serial_available(void);
+extern "C" int __attribute__((weak)) esp_serial_available(void)
+{
+	return Serial.available();
+}
 // PC 2 device flush
-extern "C" void esp_com_flush(void); 
+extern "C" void __attribute__((weak)) esp_com_flush(void)
+{
+	Serial.flush();
+}
 // PC 2 device
-extern "C" size_t esp_serial_write(uint8_t d);
+extern "C" size_t __attribute__((weak)) esp_serial_write(uint8_t d)
+{
+	return Serial.write(d);
+}
 // PC 2 device
-extern "C" void esp_serial_print(const char *data);
+extern "C" void __attribute__((weak)) esp_serial_print(const char *data)
+{
+	Serial.print(data);
+}
+#endif
 
 void ESPCOM::bridge(bool async)
 {
@@ -442,14 +462,27 @@ bool ESPCOM::hasClients(void)
 	{
 		if (serverClients[i] && serverClients[i].connected())
 		{
-			if (serverClients[i].available())
-			{
-				return true;
-			}
+			return true;
 		}
 	}
 
 	return false;
+}
+
+int ESPCOM::writeAvailable(void)
+{
+	for (uint8_t i = 0; i < MAX_SRV_CLIENTS; i++)
+	{
+		if (serverClients[i] && serverClients[i].connected())
+		{
+			if (serverClients[i].available())
+			{
+				return serverClients[i].available();
+			}
+		}
+	}
+
+	return 0;
 }
 
 #ifdef TCP_IP_DATA_FEATURE
