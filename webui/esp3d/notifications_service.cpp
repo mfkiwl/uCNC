@@ -35,9 +35,9 @@
 #if defined( ARDUINO_ARCH_ESP8266)
 #define USING_AXTLS
 #if defined(USING_AXTLS)
-#include "WiFiClientSecureAxTLS.h"
-using namespace axTLS;
-typedef axTLS::WiFiClientSecure TSecureClient;
+#include "WiFiClientSecureBearSSL.h"
+using namespace BearSSL;
+typedef BearSSL::WiFiClientSecure TSecureClient;
 #else
 #include <WiFiClientSecure.h>
 typedef WiFiClientSecure TSecureClient;

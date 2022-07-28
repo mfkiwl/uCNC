@@ -100,7 +100,7 @@
 //#define DISABLE_CONNECTING_MSG
 
 //Serial rx buffer size is 256 but can be extended
-#define SERIAL_RX_BUFFER_SIZE 512
+#define SERIAL_RX_BUFFER_SIZE 255
 
 //Serial Parameters
 #define ESP_SERIAL_PARAM SERIAL_8N1

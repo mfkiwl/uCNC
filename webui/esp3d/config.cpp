@@ -225,8 +225,10 @@ bool CONFIG::InitBaudrate(long value)
 #endif
 
 //only Serial for ESP8266
+#ifndef USE_INTERNAL_SERIAL
 #ifdef ARDUINO_ARCH_ESP8266
     Serial.setRxBufferSize (SERIAL_RX_BUFFER_SIZE);
+#endif
 #endif
 
     wifi_config.baud_rate = baud_rate;

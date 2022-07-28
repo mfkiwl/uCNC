@@ -153,8 +153,10 @@ void Esp3D::begin(uint16_t startdelayms, uint16_t recoverydelayms)
     if (breset_config) {
         //update EEPROM with default settings
         CONFIG::InitBaudrate(DEFAULT_BAUD_RATE);
+#ifndef USE_INTERNAL_SERIAL
 #ifdef ARDUINO_ARCH_ESP8266
-        Serial.setRxBufferSize (SERIAL_RX_BUFFER_SIZE);
+    Serial.setRxBufferSize (SERIAL_RX_BUFFER_SIZE);
+#endif
 #endif
         delay (2000);
         ESPCOM::println (F ("ESP EEPROM reset"), PRINTER_PIPE);
