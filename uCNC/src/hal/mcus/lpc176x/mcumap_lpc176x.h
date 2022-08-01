@@ -3177,6 +3177,184 @@ extern "C"
 #define PWM_LER ((1 << PWM0_CHANNEL) | (1 << PWM1_CHANNEL) | (1 << PWM2_CHANNEL) | (1 << PWM3_CHANNEL) | (1 << PWM4_CHANNEL) | (1 << PWM5_CHANNEL) | (1 << PWM6_CHANNEL) | (1 << PWM7_CHANNEL) | (1 << PWM8_CHANNEL) | (1 << PWM9_CHANNEL) | (1 << PWM10_CHANNEL) | (1 << PWM11_CHANNEL) | (1 << PWM12_CHANNEL) | (1 << PWM13_CHANNEL) | (1 << PWM14_CHANNEL) | (1 << PWM15_CHANNEL))
 #define PWM_ENA ((1 << (9 + PWM0_CHANNEL)) | (1 << (9 + PWM1_CHANNEL)) | (1 << (9 + PWM2_CHANNEL)) | (1 << (9 + PWM3_CHANNEL)) | (1 << (9 + PWM4_CHANNEL)) | (1 << (9 + PWM5_CHANNEL)) | (1 << (9 + PWM6_CHANNEL)) | (1 << (9 + PWM7_CHANNEL)) | (1 << (9 + PWM8_CHANNEL)) | (1 << (9 + PWM9_CHANNEL)) | (1 << (9 + PWM10_CHANNEL)) | (1 << (9 + PWM11_CHANNEL)) | (1 << (9 + PWM12_CHANNEL)) | (1 << (9 + PWM13_CHANNEL)) | (1 << (9 + PWM14_CHANNEL)) | (1 << (9 + PWM15_CHANNEL)))
 
+// Analog channel
+#ifdef ANALOG0
+#if (ANALOG0_CHANNEL < 4)
+#define ANALOG0_FUNC 1
+#elif (ANALOG0_CHANNEL > 5)
+#define ANALOG0_FUNC 2
+#else
+#define ANALOG0_FUNC 3
+#endif
+#define DIO114_CHANNEL ANALOG0_CHANNEL
+#define DIO114_FUNC ANALOG0_FUNC
+#endif
+#ifdef ANALOG1
+#if (ANALOG1_CHANNEL < 4)
+#define ANALOG1_FUNC 1
+#elif (ANALOG1_CHANNEL > 5)
+#define ANALOG1_FUNC 2
+#else
+#define ANALOG1_FUNC 3
+#endif
+#define DIO115_CHANNEL ANALOG1_CHANNEL
+#define DIO115_FUNC ANALOG1_FUNC
+#endif
+#ifdef ANALOG2
+#if (ANALOG2_CHANNEL < 4)
+#define ANALOG2_FUNC 1
+#elif (ANALOG2_CHANNEL > 5)
+#define ANALOG2_FUNC 2
+#else
+#define ANALOG2_FUNC 3
+#endif
+#define DIO116_CHANNEL ANALOG2_CHANNEL
+#define DIO116_FUNC ANALOG2_FUNC
+#endif
+#ifdef ANALOG3
+#if (ANALOG3_CHANNEL < 4)
+#define ANALOG3_FUNC 1
+#elif (ANALOG3_CHANNEL > 5)
+#define ANALOG3_FUNC 2
+#else
+#define ANALOG3_FUNC 3
+#endif
+#define DIO117_CHANNEL ANALOG3_CHANNEL
+#define DIO117_FUNC ANALOG3_FUNC
+#endif
+#ifdef ANALOG4
+#if (ANALOG4_CHANNEL < 4)
+#define ANALOG4_FUNC 1
+#elif (ANALOG4_CHANNEL > 5)
+#define ANALOG4_FUNC 2
+#else
+#define ANALOG4_FUNC 3
+#endif
+#define DIO118_CHANNEL ANALOG4_CHANNEL
+#define DIO118_FUNC ANALOG4_FUNC
+#endif
+#ifdef ANALOG5
+#if (ANALOG5_CHANNEL < 4)
+#define ANALOG5_FUNC 1
+#elif (ANALOG5_CHANNEL > 5)
+#define ANALOG5_FUNC 2
+#else
+#define ANALOG5_FUNC 3
+#endif
+#define DIO119_CHANNEL ANALOG5_CHANNEL
+#define DIO119_FUNC ANALOG5_FUNC
+#endif
+#ifdef ANALOG6
+#if (ANALOG6_CHANNEL < 4)
+#define ANALOG6_FUNC 1
+#elif (ANALOG6_CHANNEL > 5)
+#define ANALOG6_FUNC 2
+#else
+#define ANALOG6_FUNC 3
+#endif
+#define DIO120_CHANNEL ANALOG6_CHANNEL
+#define DIO120_FUNC ANALOG6_FUNC
+#endif
+#ifdef ANALOG7
+#if (ANALOG7_CHANNEL < 4)
+#define ANALOG7_FUNC 1
+#elif (ANALOG7_CHANNEL > 5)
+#define ANALOG7_FUNC 2
+#else
+#define ANALOG7_FUNC 3
+#endif
+#define DIO121_CHANNEL ANALOG7_CHANNEL
+#define DIO121_FUNC ANALOG7_FUNC
+#endif
+#ifdef ANALOG8
+#if (ANALOG8_CHANNEL < 4)
+#define ANALOG8_FUNC 1
+#elif (ANALOG8_CHANNEL > 5)
+#define ANALOG8_FUNC 2
+#else
+#define ANALOG8_FUNC 3
+#endif
+#define DIO122_CHANNEL ANALOG8_CHANNEL
+#define DIO122_FUNC ANALOG8_FUNC
+#endif
+#ifdef ANALOG9
+#if (ANALOG9_CHANNEL < 4)
+#define ANALOG9_FUNC 1
+#elif (ANALOG9_CHANNEL > 5)
+#define ANALOG9_FUNC 2
+#else
+#define ANALOG9_FUNC 3
+#endif
+#define DIO123_CHANNEL ANALOG9_CHANNEL
+#define DIO123_FUNC ANALOG9_FUNC
+#endif
+#ifdef ANALOG10
+#if (ANALOG10_CHANNEL < 4)
+#define ANALOG10_FUNC 1
+#elif (ANALOG10_CHANNEL > 5)
+#define ANALOG10_FUNC 2
+#else
+#define ANALOG10_FUNC 3
+#endif
+#define DIO124_CHANNEL ANALOG10_CHANNEL
+#define DIO124_FUNC ANALOG10_FUNC
+#endif
+#ifdef ANALOG11
+#if (ANALOG11_CHANNEL < 4)
+#define ANALOG11_FUNC 1
+#elif (ANALOG11_CHANNEL > 5)
+#define ANALOG11_FUNC 2
+#else
+#define ANALOG11_FUNC 3
+#endif
+#define DIO125_CHANNEL ANALOG11_CHANNEL
+#define DIO125_FUNC ANALOG11_FUNC
+#endif
+#ifdef ANALOG12
+#if (ANALOG12_CHANNEL < 4)
+#define ANALOG12_FUNC 1
+#elif (ANALOG12_CHANNEL > 5)
+#define ANALOG12_FUNC 2
+#else
+#define ANALOG12_FUNC 3
+#endif
+#define DIO126_CHANNEL ANALOG12_CHANNEL
+#define DIO126_FUNC ANALOG12_FUNC
+#endif
+#ifdef ANALOG13
+#if (ANALOG13_CHANNEL < 4)
+#define ANALOG13_FUNC 1
+#elif (ANALOG13_CHANNEL > 5)
+#define ANALOG13_FUNC 2
+#else
+#define ANALOG13_FUNC 3
+#endif
+#define DIO127_CHANNEL ANALOG13_CHANNEL
+#define DIO127_FUNC ANALOG13_FUNC
+#endif
+#ifdef ANALOG14
+#if (ANALOG14_CHANNEL < 4)
+#define ANALOG14_FUNC 1
+#elif (ANALOG14_CHANNEL > 5)
+#define ANALOG14_FUNC 2
+#else
+#define ANALOG14_FUNC 3
+#endif
+#define DIO128_CHANNEL ANALOG14_CHANNEL
+#define DIO128_FUNC ANALOG14_FUNC
+#endif
+#ifdef ANALOG15
+#if (ANALOG15_CHANNEL < 4)
+#define ANALOG15_FUNC 1
+#elif (ANALOG15_CHANNEL > 5)
+#define ANALOG15_FUNC 2
+#else
+#define ANALOG15_FUNC 3
+#endif
+#define DIO129_CHANNEL ANALOG15_CHANNEL
+#define DIO129_FUNC ANALOG15_FUNC
+#endif
+
 // COM registers
 #if (INTERFACE == INTERFACE_UART)
 #ifndef COM_NUMBER
@@ -3268,6 +3446,14 @@ extern "C"
 		LPC_PWM1->TCR &= (~((uint32_t)(1 << 1))) & ((uint32_t)(0x0000000B));                                               \
 	}
 #define mcu_get_pwm(diopin) LPC_PWM1->__indirect__(diopin, MR)
+
+#define mcu_get_analog(diopin) ({                           \
+	SETBIT(LPC_ADC->ADCR, (__indirect__(diopin, CHANNEL))); \
+	SETBIT(LPC_ADC->ADCR, 24);                              \
+	while (!CHECKBIT(LPC_ADC->ADGDR, 31))                   \
+		;                                                   \
+	((LPC_ADC->ADGDR >> 4) & 0xFFF);                        \
+})
 
 	extern volatile bool lpc_global_isr_enabled;
 #define mcu_enable_global_isr()        \

@@ -90,6 +90,14 @@ volatile bool lpc_global_isr_enabled;
 		mcu_set_pwm(diopin, 0);                                                                                                                                  \
 	}
 
+#define mcu_config_analog(diopin)                                                                                                                                     \
+	{                                                                                                                                                                 \
+		mcu_config_input(diopin);                                                                                                                                     \
+		PINSEL_CFG_Type analog = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_NORMAL}; \
+		PINSEL_ConfigPin(&analog);                                                                                                                                    \
+		ADC_Init(LPC_ADC, 100000);                                                                                                                                    \
+	}
+
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
 
@@ -119,7 +127,7 @@ static FORCEINLINE void mcu_clear_servos()
 
 void servo_timer_init(void)
 {
-    TIM_Cmd(SERVO_TIMER_REG, DISABLE);
+	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 	TIM_TIMERCFG_Type tmrconfig;
 	TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
 	TIM_Init(SERVO_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
@@ -210,7 +218,7 @@ void MCU_RTC_ISR(void)
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	//TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
+	// TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
 	mcu_enable_global_isr();
 }
 
@@ -752,53 +760,54 @@ void mcu_init(void)
 #endif
 #endif
 #if ANALOG0 >= 0
-	mcu_config_input(ANALOG0);
+	mcu_config_analog(ANALOG0);
 #endif
 #if ANALOG1 >= 0
-	mcu_config_input(ANALOG1);
+	mcu_config_analog(ANALOG1);
 #endif
 #if ANALOG2 >= 0
-	mcu_config_input(ANALOG2);
+	mcu_config_analog(ANALOG2);
 #endif
 #if ANALOG3 >= 0
-	mcu_config_input(ANALOG3);
+	mcu_config_analog(ANALOG3);
 #endif
 #if ANALOG4 >= 0
-	mcu_config_input(ANALOG4);
+	mcu_config_analog(ANALOG4);
 #endif
 #if ANALOG5 >= 0
-	mcu_config_input(ANALOG5);
+	mcu_config_analog(ANALOG5);
 #endif
 #if ANALOG6 >= 0
-	mcu_config_input(ANALOG6);
+	mcu_config_analog(ANALOG6);
 #endif
 #if ANALOG7 >= 0
-	mcu_config_input(ANALOG7);
+	mcu_config_analog(ANALOG7);
 #endif
 #if ANALOG8 >= 0
-	mcu_config_input(ANALOG8);
+	mcu_config_analog(ANALOG8);
 #endif
 #if ANALOG9 >= 0
-	mcu_config_input(ANALOG9);
+	mcu_config_analog(ANALOG9);
 #endif
 #if ANALOG10 >= 0
-	mcu_config_input(ANALOG10);
+	mcu_config_analog(ANALOG10);
 #endif
 #if ANALOG11 >= 0
-	mcu_config_input(ANALOG11);
+	mcu_config_analog(ANALOG11);
 #endif
 #if ANALOG12 >= 0
-	mcu_config_input(ANALOG12);
+	mcu_config_analog(ANALOG12);
 #endif
 #if ANALOG13 >= 0
-	mcu_config_input(ANALOG13);
+	mcu_config_analog(ANALOG13);
 #endif
 #if ANALOG14 >= 0
-	mcu_config_input(ANALOG14);
+	mcu_config_analog(ANALOG14);
 #endif
 #if ANALOG15 >= 0
-	mcu_config_input(ANALOG15);
+	mcu_config_analog(ANALOG15);
 #endif
+
 #if DIN0 >= 0
 	mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
