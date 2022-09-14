@@ -48,12 +48,10 @@ extern "C"
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
-#define __romarr__ const char
-#define rom_strptr *
+#define rom_ptr *
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
-#define rom_read_byte *
 
 #if (INTERFACE == INTERFACE_USB)
 // if USB VCP is used force RX sync also

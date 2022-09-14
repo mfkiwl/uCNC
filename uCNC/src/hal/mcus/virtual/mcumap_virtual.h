@@ -29,12 +29,10 @@
 #endif
 #define __rom__
 #define __romstr__
-#define __romarr__ const char
-#define rom_strptr *
+#define rom_ptr *
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
-#define rom_read_byte *
 
 #define ENABLE_SYNC_TX
 

@@ -77,11 +77,11 @@ void protocol_send_string(const char *__s)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	unsigned char c = (unsigned char)rom_strptr(__s++);
+	unsigned char c = (unsigned char)rom_ptr(__s++);
 	do
 	{
 		serial_putc(c);
-		c = (unsigned char)rom_strptr(__s++);
+		c = (unsigned char)rom_ptr(__s++);
 	} while (c != 0);
 #ifdef ECHO_CMD
 	protocol_busy = false;

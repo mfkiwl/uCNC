@@ -207,6 +207,13 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
+#define DOUT8_BIT 1
+#define DOUT8_PORT A
+#define DOUT9_BIT 0
+#define DOUT9_PORT H
+#define DOUT10_BIT 1
+#define DOUT10_PORT H
+
 #ifdef __cplusplus
 }
 #endif
