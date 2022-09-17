@@ -47,12 +47,23 @@
 
 static u8g2_t u8g2;
 
+typedef struct
+{
+	uint32_t start_screen_timeout;
+	uint32_t user_timeout;
+	uint8_t selected_item;
+} screen_options_t;
+
+static screen_options_t display_screen;
+
 /**
  *
  * can also be done via hardware SPI and I2C libraries of µCNC
  * but is not needed
  *
  * */
+
+// #ifdef MCU_HAS_SPI
 // #include "../softspi.h"
 // uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 // {
@@ -89,7 +100,9 @@ static u8g2_t u8g2;
 // 	}
 // 	return 1;
 // }
+// #endif
 
+// #ifdef MCU_HAS_I2C
 // #include "../softi2c.h"
 // uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 // {
@@ -126,6 +139,7 @@ static u8g2_t u8g2;
 
 // 	return 1;
 // }
+// #endif
 
 uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -303,15 +317,165 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 	return 1;
 }
 
+/**
+ * Helper functions for numbers
+ * */
+
+void ftoa(float __val, char *__s, int __radix)
+{
+	uint8_t i = 0;
+	if (__val < 0)
+	{
+		__s[i++] = '-';
+		__val = -__val;
+	}
+
+	uint32_t interger = (uint32_t)floorf(__val);
+	__val -= interger;
+	uint32_t mult = (interger < 10) ? 1000 : ((interger < 100) ? 100 : 10);
+	__val *= mult;
+	uint32_t digits = (uint32_t)roundf(__val);
+	if (digits == mult)
+	{
+		interger++;
+		digits = 0;
+	}
+
+	itoa(interger, &__s[i], 10);
+	while (__s[i] != 0)
+	{
+		i++;
+	}
+	__s[i++] = '.';
+	if ((mult == 1000) && (digits < 100))
+	{
+		__s[i++] = '0';
+	}
+
+	if ((mult >= 100) && (digits < 10))
+	{
+		__s[i++] = '0';
+	}
+
+	itoa(digits, &__s[i], 10);
+}
+
 #define LCDWIDTH u8g2_GetDisplayWidth(&u8g2)
 #define LCDHEIGHT u8g2_GetDisplayHeight(&u8g2)
-#define FONTHEIGHT (u8g2_GetAscent(&u8g2) + u8g2_GetDescent(&u8g2))
+#define FONTHEIGHT (u8g2_GetAscent(&u8g2) - u8g2_GetDescent(&u8g2))
 #define ALIGN_CENTER(t) ((LCDWIDTH - u8g2_GetUTF8Width(&u8g2, t)) / 2)
 #define ALIGN_RIGHT(t) (LCDWIDTH - u8g2_GetUTF8Width(&u8g2, t))
 #define ALIGN_LEFT 0
 #define JUSTIFY_CENTER ((LCDHEIGHT + FONTHEIGHT) / 2)
-#define JUSTIFY_BOTTOM (LCDHEIGHT - u8g2_GetDescent(&u8g2))
+#define JUSTIFY_BOTTOM (LCDHEIGHT + u8g2_GetDescent(&u8g2))
 #define JUSTIFY_TOP u8g2_GetAscent(&u8g2)
+
+
+void graphic_lcd_start_screen(void)
+{
+	char buff[32];
+	rom_strcpy(buff, __romstr__("µCNC"));
+	u8g2_ClearBuffer(&u8g2);
+	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
+	u8g2_DrawUTF8X2(&u8g2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(&u8g2, buff)), JUSTIFY_CENTER - FONTHEIGHT/2, buff);
+	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
+	u8g2_SetFont(&u8g2, u8g2_font_6x12_tr);
+	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
+	u8g2_SendBuffer(&u8g2);
+}
+
+uint8_t graphic_lcd_system_status_position(void)
+{
+	char buff[32];
+	uint8_t y = JUSTIFY_BOTTOM;
+
+	float axis[MAX(AXIS_COUNT, 3)];
+	int32_t steppos[STEPPER_COUNT];
+	itp_get_rt_position(steppos);
+	kinematics_apply_forward(steppos, axis);
+	kinematics_apply_reverse_transform(axis);
+
+	u8g2_SetFont(&u8g2, u8g2_font_5x8_tr);
+
+	u8g2_DrawLine(&u8g2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+
+#if (AXIS_COUNT >= 4)
+	buff[0] = 'A';
+	ftoa(axis[3], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+
+#if (AXIS_COUNT >= 5)
+	buff[0] = 'B';
+	ftoa(axis[4], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
+#endif
+#if (AXIS_COUNT >= 6)
+	buff[0] = 'C';
+	ftoa(axis[5], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+#endif
+	y -= FONTHEIGHT;
+#endif
+
+#if (AXIS_COUNT >= 1)
+	buff[0] = 'X';
+	ftoa(axis[0], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+#endif
+#if (AXIS_COUNT >= 2)
+	buff[0] = 'Y';
+	ftoa(axis[1], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
+#endif
+#if (AXIS_COUNT >= 3)
+	buff[0] = 'Z';
+	ftoa(axis[2], &buff[2], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+#endif
+
+	return (y - FONTHEIGHT - 3);
+}
+
+void graphic_lcd_system_status_units_feed_tool(uint8_t y)
+{
+	char buff[32];
+
+	if (g_settings.report_inches)
+	{
+		rom_strcpy(buff, __romstr__("IN F "));
+	}
+	else
+	{
+		rom_strcpy(buff, __romstr__("MM | F "));
+	}
+
+	// Realtime feed
+	ftoa(itp_get_rt_feed(), &buff[5], 10);
+	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+
+	// Tool
+	char tool[5];
+	uint8_t modalgroups[12];
+	uint16_t feed;
+	uint16_t spindle;
+	uint8_t coolant;
+	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
+	rom_strcpy(tool, __romstr__(" | T "));
+	itoa(modalgroups[11], &tool[5], 10);
+	// Realtime tool speed
+	rom_strcpy(buff, __romstr__("S "));
+	itoa(tool_get_speed(), &buff[2], 10);
+	strcat(buff, tool);
+	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+}
+
+void graphic_lcd_system_status_screen(void)
+{
+	u8g2_ClearBuffer(&u8g2);
+	uint8_t y = graphic_lcd_system_status_position();
+	graphic_lcd_system_status_units_feed_tool(y);
+	u8g2_SendBuffer(&u8g2);
+}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 /**
@@ -319,67 +483,33 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
  * */
 uint8_t graphic_lcd_loop(void *args, bool *handled)
 {
+	if (display_screen.start_screen_timeout < mcu_millis())
+	{
+		graphic_lcd_system_status_screen();
+	}
 	return STATUS_OK;
 }
 
 CREATE_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
-#endif
 
-#define GLCD_UCNC_STR __romstr__("µCNC")
-#define GLCD_UCNC_VERSION_STR __romstr__(("v" CNC_VERSION))
-
-void graphic_lcd_start_screen(void)
-{
-	char buff[32];
-	rom_strcpy(buff, GLCD_UCNC_STR);
-	u8g2_ClearBuffer(&u8g2);
-	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
-	u8g2_DrawUTF8X2(&u8g2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(&u8g2, buff)), JUSTIFY_CENTER - FONTHEIGHT, buff);
-	rom_strcpy(buff, GLCD_UCNC_VERSION_STR);
-	u8g2_SetFont(&u8g2, u8g2_font_6x12_t_symbols);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + (2 * FONTHEIGHT), buff);
-	u8g2_SendBuffer(&u8g2);
-}
-
-char lcd_x_axis[] __rom__ = "X: %0.3f";
-char lcd_y_axis[] __rom__ = "Y: %0.3f";
-char lcd_z_axis[] __rom__ = "Z: %0.3f";
-char lcd_a_axis[] __rom__ = "A: %0.3f";
-char lcd_b_axis[] __rom__ = "B: %0.3f";
-char lcd_c_axis[] __rom__ = "C: %0.3f";
-const char *lcd_axis[] __rom__ = {
-	lcd_x_axis,
-	lcd_y_axis,
-	lcd_z_axis,
-	lcd_a_axis,
-	lcd_b_axis,
-	lcd_c_axis};
-
-void graphic_lcd_system_status_screen(void)
-{
-	char buff[32];
-	char buffer[40];
-	rom_strcpy(buff, (const char *)rom_ptr(&(lcd_axis[0])));
-	LCD_putstr(buffer);
-	rom_strcpy(buff, GLCD_UCNC_STR);
-	u8g2_ClearBuffer(&u8g2);
-	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER - FONTHEIGHT, buff);
-	rom_strcpy(buff, GLCD_UCNC_VERSION_STR);
-	u8g2_SetFont(&u8g2, u8g2_font_6x12_t_symbols);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
-	u8g2_SendBuffer(&u8g2);
-}
-
-DECL_MODULE(graphic_lcd)
+uint8_t graphic_lcd_start(void *args, bool *handled)
 {
 	u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
+	// u8g2_Setup_ssd1306_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display
-
+	display_screen.start_screen_timeout = mcu_millis() + 5000;
 	graphic_lcd_start_screen();
+}
+
+CREATE_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
+#endif
+
+DECL_MODULE(graphic_lcd)
+{
 #ifdef ENABLE_MAIN_LOOP_MODULES
+	ADD_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
 	ADD_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
 #else
 #warning "Main loop extensions are not enabled. SD card will not work."

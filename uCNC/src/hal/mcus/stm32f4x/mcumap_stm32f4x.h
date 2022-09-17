@@ -54,7 +54,7 @@ extern "C"
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
-#define rom_ptr *
+#define rom_char *
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
