@@ -17,20 +17,26 @@
 */
 #include "softspi.h"
 
-FORCEINLINE static void softspi_delay(softspi_port_t *port){
-	uint8_t delay = port->spidelay;
-	while(delay--){
-		mcu_delay_us(1);
+FORCEINLINE static void softspi_delay(uint8_t loops_100ns)
+{
+	while (loops_100ns--)
+	{
+		mcu_delay_100ns();
 	}
 }
 
-void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency){
-	if(!port) {
+void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency)
+{
+	if (!port)
+	{
+#ifdef MCU_HAS_SPI
 		mcu_spi_config(mode, frequency);
+#endif
 	}
-	else{
+	else
+	{
 		port->spimode = mode;
-		port->spidelay = (uint8_t)SPIXMITDELAY(frequency);
+		port->spidelay = (uint8_t)SPI_DELAY(frequency);
 	}
 }
 
@@ -62,13 +68,13 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 			}
 			port->mosi((bool)(c & 0x80));
 			c <<= 1;
-			//sample
-			softspi_delay(port);
+			// sample
+			softspi_delay(port->spidelay);
 			clk = !clk;
 			port->clk(clk);
 			c |= port->miso();
 
-			softspi_delay(port);
+			softspi_delay(port->spidelay);
 			if (!on_down)
 			{
 				clk = !clk;
