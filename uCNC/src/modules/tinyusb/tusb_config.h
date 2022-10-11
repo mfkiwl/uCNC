@@ -71,6 +71,14 @@ extern "C"
 #error "Incorrect RHPort configuration"
 #endif
 
+#ifndef BOARD_DEVICE_RHPORT_NUM
+  #define BOARD_DEVICE_RHPORT_NUM OPT_MODE_NONE
+#endif
+
+#ifndef CFG_TUSB_RHPORT1_MODE
+  #define CFG_TUSB_RHPORT1_MODE OPT_MODE_NONE
+#endif
+
 #ifndef CFG_TUSB_OS
 #define CFG_TUSB_OS OPT_OS_NONE
 #endif
