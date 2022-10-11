@@ -23,8 +23,8 @@
 #include "system_LPC17xx.h"
 
 #if (INTERFACE == INTERFACE_USB)
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include "../../../modules/tinyusb/tusb_config.h"
+#include "../../../modules/tinyusb/src/tusb.h"
 #endif
 
 /**

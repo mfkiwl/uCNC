@@ -39,8 +39,8 @@
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
 #if (INTERFACE == INTERFACE_USB)
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include "../../../modules/tinyusb/tusb_config.h"
+#include "../../../modules/tinyusb/src/tusb.h"
 #endif
 
 volatile bool samd21_global_isr_enabled;

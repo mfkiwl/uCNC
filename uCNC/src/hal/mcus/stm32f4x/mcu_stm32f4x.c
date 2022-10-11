@@ -25,8 +25,8 @@
 #include "mcumap_stm32f4x.h"
 
 #if (INTERFACE == INTERFACE_USB)
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include "../../../modules/tinyusb/tusb_config.h"
+#include "../../../modules/tinyusb/src/tusb.h"
 #endif
 
 #ifndef FLASH_SIZE
