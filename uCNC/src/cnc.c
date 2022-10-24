@@ -101,13 +101,13 @@ void cnc_init(void)
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	serial_init();										// serial
+	mod_init();											// modules
 	settings_init();									// settings
 	itp_init();											// interpolator
 	planner_init();										// motion planner
 #if TOOL_COUNT > 0
 	tool_init();
 #endif
-	mod_init();
 }
 
 void cnc_run(void)
@@ -431,6 +431,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 	{
 		SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
 		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+		// prevents from clearing twice
+		CLEARFLAG(statemask, EXEC_HOLD);
 #if TOOL_COUNT > 0
 		// updated the coolant pins
 		tool_set_coolant(planner_get_coolant());
@@ -444,6 +446,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 			}
 		}
 #endif
+		// tries to sync the tool
+		// if something goes wrong the tool can reinstate the HOLD state
 		itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
 		if (!g_settings.laser_mode)

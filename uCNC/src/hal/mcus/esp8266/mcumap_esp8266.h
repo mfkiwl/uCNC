@@ -57,6 +57,17 @@ extern "C"
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
@@ -966,14 +977,25 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
-#if (INTERFACE == INTERFACE_UART)
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+#ifdef ENABLE_WIFI
+#define MCU_HAS_WIFI
+#endif
+
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
+
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
 #endif
 
-#define ENABLE_SYNC_RX
-#define ENABLE_SYNC_TX
+#define MCU_HAS_ONESHOT_TIMER
 
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
@@ -1005,7 +1027,7 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
@@ -1034,6 +1056,9 @@ extern "C"
 	}
 
 #define mcu_spi_config(X, Y) esp8266_spi_config(X, Y)
+
+extern void esp8266_delay_us(uint16_t delay);
+#define mcu_delay_us(X) esp8266_delay_us(X)
 
 #ifdef __cplusplus
 }

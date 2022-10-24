@@ -6,19 +6,79 @@
 
 # Changelog
 
-## [1.5.0] - Unreleased
+## [1.5.3] - 22-10-2022
+
+### Added
+
+- added support for comments with ';' char (#291)
+- added support for S word clustering format used by Smoothieware (#289)
+- added support for external module $ settings (#293)
+- added boardmaps for LPC176x boards SKR v1.4 Turbo and MKS Base V1.3 (#267)
+- added boardmaps for STM32F4 boards MKS Robin Nano v1.2 and SKR Pro v1.2 (#299)
+- added generic purpose ONESHOT timer (#295)(#301)
+- added laser PPI with PPI control, Pulse width control and mixed control modes (#295)
+- added extension modules $I info message modifier handler (#300)
+- added basic/partial support for Powtran 8100 VFD tool (#311)
+- Added boardmap for boards MKS DLC32 and MKS Tinybee including new core module for 74HC595 (shift-register) IO expander (#302)
+
+### Changed
+
+- added optimizations to motion control to reduce some redundant operations (#292)
+- UART and USB can be used in parallel (#312)
+- improved VFD safety if communications fail setting the machine in HOLD state (#317)
+- completed Wemos D1 R32 pinout mapping (#318)
+
+### Fixed
+
+- fixed M2/M30 hold with check mode enabled caused program to stall (#297)
+- fixed STM32 incorrect BAUDRATE config on other UART ports othern then UART1 (#309)
+- fixed ARM us delay that caused deadlocks in the MCU after disabling global interrupts (#309)
+- fixed RAMBO read MSTEPS ouput pin states via M351 (#309)
+- fixed protocol message contamination with status report when using synchronous TX mode (#314)
+- fixed soft UART and SPI causing communications to miss characters from host (#316)
+
+## [1.5.2] - 01-10-2022
+
+### Added
+
+- configurable PWM frequency (#286)
+
+### Fixed
+
+- fixed no command response after a tool command without motion (#284)
+- fixed incorrect laser power factor scaling with M4 (#282)
+- $P servo report values for AVR (#283)
+- fixed tool update with dwell to reach programmed speed
+
+## [1.5.1] - 23-09-2022
+
+### Fixed
+
+- dwell is being executed ahead of time (async) (#276)
+
+## [1.5.0] - 22-09-2022
 
 ### Added
 
 - added Hardware I2C and SPI capabilities to several MCU (only ESP8266 and ESP32 not supported for now) that are integrated and used via software libraries (#249)
+- added speed config function to MCU and soft SPI (#253)
+- added events to support SD card module (#254)
+- added LPC176x analog input support (#273)
 
 ### Changed
 
 - ARM mcu share the same µs delay function calculated from SysTick clock (no loops or coredebug clocks used) (#249)
 - software SPI/UART libraries use atomic operations macros (#249)
 - moved activity led code to core (#250)
+- better WiFi detect on ESP32 (#251)
+- rewritten software I2C (#255)
+- migrate LPC176x critical code to bare metal with serveral enhancements for ITP and SERVO ISR (#273)
 
 ### Fixed
+
+- prevented dotask event lock reentrancy (#252)
+- better delay functions for generic usage (including SPI, I2C and UART software libraries) (#264)
+- fixed planner deacceleration calculations to prevent that caused noticeable abrupt stops with fast short motions (image rastering) (#275)
 
 ## [1.5.rc] - 2022-09-02
 
@@ -983,6 +1043,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
+[1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
+[1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
 [1.5.beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
