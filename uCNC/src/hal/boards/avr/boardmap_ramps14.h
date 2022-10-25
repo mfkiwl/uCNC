@@ -183,17 +183,18 @@ extern "C"
 	//  #define DIN0_ISR 0
 
 // hardware I2C
-#define I2C_SCL_BIT 0
-#define I2C_SCL_PORT D
-#define I2C_SDA_BIT 1
-#define I2C_SDA_PORT D
+// #define I2C_SCL_BIT 0
+// #define I2C_SCL_PORT D
+// #define I2C_SDA_BIT 1
+// #define I2C_SDA_PORT D
+// #define I2C_FREQ 100000
 // software I2C
-// #define DIN30_BIT 0
-// #define DIN30_PORT D
-// #define DIN30_PULLUP
-// #define DIN31_BIT 1
-// #define DIN31_PORT D
-// #define DIN31_PULLUP
+#define DIN30_BIT 0
+#define DIN30_PORT D
+#define DIN30_PULLUP
+#define DIN31_BIT 1
+#define DIN31_PORT D
+#define DIN31_PULLUP
 
 // hardware SPI
 #define SPI_SDO_BIT 2

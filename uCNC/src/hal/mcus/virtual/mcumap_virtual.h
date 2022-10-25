@@ -27,12 +27,6 @@
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
 #endif
-#define __rom__
-#define __romstr__
-#define rom_char *
-#define rom_strcpy strcpy
-#define rom_strncpy strncpy
-#define rom_memcpy memcpy
 
 //needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE

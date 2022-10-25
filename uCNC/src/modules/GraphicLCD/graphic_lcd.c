@@ -39,10 +39,10 @@
 #endif
 
 #ifndef U8X8_MSG_GPIO_I2C_CLOCK_PIN
-#define U8X8_MSG_GPIO_I2C_CLOCK_PIN DOUT9
+#define U8X8_MSG_GPIO_I2C_CLOCK_PIN DIN30
 #endif
 #ifndef U8X8_MSG_GPIO_I2C_DATA_PIN
-#define U8X8_MSG_GPIO_I2C_DATA_PIN DOUT10
+#define U8X8_MSG_GPIO_I2C_DATA_PIN DIN31
 #endif
 
 #ifndef GRAPHIC_LCD_REFRESH
@@ -145,6 +145,7 @@ static screen_options_t display_screen;
 // 		buf_idx = 0;
 // 		break;
 // 	case U8X8_MSG_BYTE_END_TRANSFER:
+// 		serial_print_int(buf_idx);
 // 		softi2c_send(NULL, u8x8_GetI2CAddress(u8x8) >> 1, buffer, (int)buf_idx);
 // 		break;
 // 	default:
@@ -166,9 +167,8 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 			;
 		break;
 	case U8X8_MSG_DELAY_100NANO: // delay arg_int * 100 nano seconds
-		arg_int = (uint8_t)(arg_int / 10) + 1;
 		while (arg_int--)
-			mcu_delay_us(1);
+			mcu_delay_100ns();
 		break;
 	case U8X8_MSG_DELAY_10MICRO: // delay arg_int * 10 micro seconds
 		while (arg_int--)
@@ -288,12 +288,34 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 		break;
 	case U8X8_MSG_GPIO_I2C_CLOCK: // arg_int=0: Output low at I2C clock pin
 #ifdef U8X8_MSG_GPIO_I2C_CLOCK_PIN
-		io_set_output(U8X8_MSG_GPIO_I2C_CLOCK_PIN, (bool)arg_int);
+		if (arg_int)
+		{
+			mcu_config_input(U8X8_MSG_GPIO_I2C_CLOCK_PIN);
+			mcu_config_pullup(U8X8_MSG_GPIO_I2C_CLOCK_PIN);
+			u8x8_SetGPIOResult(u8x8, mcu_get_input(U8X8_MSG_GPIO_I2C_CLOCK_PIN));
+		}
+		else
+		{
+			mcu_config_output(U8X8_MSG_GPIO_I2C_CLOCK_PIN);
+			mcu_clear_output(U8X8_MSG_GPIO_I2C_CLOCK_PIN);
+			u8x8_SetGPIOResult(u8x8, 0);
+		}
 #endif
 		break;					 // arg_int=1: Input dir with pullup high for I2C clock pin
 	case U8X8_MSG_GPIO_I2C_DATA: // arg_int=0: Output low at I2C data pin
 #ifdef U8X8_MSG_GPIO_I2C_DATA_PIN
-		io_set_output(U8X8_MSG_GPIO_I2C_DATA_PIN, (bool)arg_int);
+		if (arg_int)
+		{
+			mcu_config_input(U8X8_MSG_GPIO_I2C_DATA_PIN);
+			mcu_config_pullup(U8X8_MSG_GPIO_I2C_DATA_PIN);
+			u8x8_SetGPIOResult(u8x8, mcu_get_input(U8X8_MSG_GPIO_I2C_DATA_PIN));
+		}
+		else
+		{
+			mcu_config_output(U8X8_MSG_GPIO_I2C_DATA_PIN);
+			mcu_clear_output(U8X8_MSG_GPIO_I2C_DATA_PIN);
+			u8x8_SetGPIOResult(u8x8, 0);
+		}
 #endif
 		break; // arg_int=1: Input dir with pullup high for I2C data pin
 	case U8X8_MSG_GPIO_MENU_SELECT:
@@ -582,7 +604,7 @@ void graphic_lcd_system_draw_menu(void)
 {
 	
 }
-
+*/
 #ifdef ENABLE_MAIN_LOOP_MODULES
 /**
  * Handles SD card in the main loop
@@ -623,7 +645,7 @@ CREATE_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
 uint8_t graphic_lcd_start(void *args, bool *handled)
 {
 	u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
-	// u8g2_Setup_ssd1306_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
+	// u8g2_Setup_ssd1306_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display

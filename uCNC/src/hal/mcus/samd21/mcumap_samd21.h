@@ -61,14 +61,6 @@ extern "C"
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 13
 #endif
 
-// defines special mcu to access flash strings and arrays
-#define __rom__
-#define __romstr__
-#define rom_char *
-#define rom_strcpy strcpy
-#define rom_strncpy strncpy
-#define rom_memcpy memcpy
-
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)

@@ -45,6 +45,26 @@ extern "C"
 #define MCU_IO_CALLBACK MCU_CALLBACK
 #endif
 
+// defines special mcu to access flash strings and arrays
+#ifndef __rom__
+#define __rom__
+#endif
+#ifndef __romstr__
+#define __romstr__
+#endif
+#ifndef rom_ptr
+#define rom_ptr *
+#endif
+#ifndef rom_strcpy
+#define rom_strcpy strcpy
+#endif
+#ifndef rom_strncpy
+#define rom_strncpy strncpy
+#endif
+#ifndef rom_memcpy
+#define rom_memcpy memcpy
+#endif
+
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
 	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered

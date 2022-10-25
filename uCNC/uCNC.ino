@@ -9,5 +9,6 @@ void setup()
 void loop()
 {
 	// put your main code here, to run repeatedly:
+	serial_print_str("run");
 	cnc_run();
 }

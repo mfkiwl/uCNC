@@ -168,11 +168,11 @@ unsigned char serial_peek(void)
 
 void serial_inject_cmd(const char *__s)
 {
-	unsigned char c = (unsigned char)rom_char(__s++);
+	unsigned char c = (unsigned char)rom_ptr(__s++);
 	do
 	{
 		mcu_com_rx_cb(c);
-		c = (unsigned char)rom_char(__s++);
+		c = (unsigned char)rom_ptr(__s++);
 	} while (c != 0);
 }
 

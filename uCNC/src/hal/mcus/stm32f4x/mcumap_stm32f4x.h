@@ -51,13 +51,7 @@ extern "C"
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 4
 #endif
-// defines special mcu to access flash strings and arrays
-#define __rom__
-#define __romstr__
-#define rom_char *
-#define rom_strcpy strcpy
-#define rom_strncpy strncpy
-#define rom_memcpy memcpy
+
 
 //needed by software delays
 
