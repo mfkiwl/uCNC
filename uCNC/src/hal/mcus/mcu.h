@@ -206,7 +206,6 @@ extern "C"
  * sets the pwm for a servo (50Hz with tON between 1~2ms)
  * can be defined either as a function or a macro call
  * */
-#define SERVO0_UCNC_INTERNAL_PIN 40
 #ifndef mcu_set_servo
 	void mcu_set_servo(uint8_t servo, uint8_t value);
 #endif
@@ -227,26 +226,11 @@ extern "C"
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-	bool mcu_rx_ready(void); // Stop async send
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
 	void mcu_putc(char c);
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-	char mcu_getc(void);
 #endif
 
 // ISR
@@ -276,9 +260,14 @@ extern "C"
 
 	// Step interpolator
 	/**
-	 * convert step rate to clock cycles
+	 * convert step rate/frequency to timer ticks and prescaller
 	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+
+	/**
+	 * convert timer ticks and prescaller to step rate/frequency
+	 * */
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
 
 	/**
 	 * starts the timer interrupt that generates the step pulses for the interpolator
@@ -299,7 +288,13 @@ extern "C"
 	 * gets the MCU running time in milliseconds.
 	 * the time counting is controled by the internal RTC
 	 * */
-	uint32_t mcu_millis();
+	uint32_t mcu_millis(void);
+
+	/**
+	 * gets the MCU running time in microseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
+	uint32_t mcu_micros(void);
 
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")
@@ -493,6 +488,10 @@ extern "C"
 #ifndef mcu_i2c_read
 	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
 #endif
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
 #endif
 
 #ifdef __cplusplus

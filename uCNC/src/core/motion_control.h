@@ -33,6 +33,7 @@ extern "C"
 #define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 2
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM 4
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL 8
+#define MOTIONCONTROL_MODE_APPLY_HMAP 16
 
 #define MOTIONCONTROL_PROBE_INVERT 1
 #define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
@@ -44,14 +45,19 @@ extern "C"
 		struct
 		{
 			uint8_t feed_override : 1;
+			uint8_t optimal : 1;
+			uint8_t synched : 1;
 #if TOOL_COUNT > 0
 			uint8_t spindle_running : 2;
 			uint8_t coolant : 2;
-			uint8_t coolant_override : 2;
 #else
-		uint8_t : 6; // unused
+		uint8_t : 4; // unused
 #endif
-			uint8_t is_subsegment : 1;
+#ifdef ENABLE_BACKLASH_COMPENSATION
+			uint8_t backlash_comp : 1;
+#else
+		uint8_t : 1; // unused
+#endif
 		} bit;
 	} motion_flags_t;
 
@@ -61,13 +67,15 @@ extern "C"
 		uint32_t line;
 #endif
 		step_t steps[STEPPER_COUNT];
-		float dir_vect[AXIS_COUNT];
 		uint8_t dirbits;
-		#ifdef ENABLE_LINACT_PLANNER
+#ifdef ENABLE_LINACT_PLANNER
 		uint32_t full_steps; // number of steps of all linear actuators
-		#endif
-		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
+#endif
 		float feed;
+		float max_feed;
+		float max_accel;
+		float feed_conversion;
+		float cos_theta; // angle between current and previous motion
 		uint8_t main_stepper;
 		uint16_t spindle;
 		uint16_t dwell;
@@ -81,7 +89,9 @@ extern "C"
 
 	// async motions
 	uint8_t mc_line(float *target, motion_data_t *block_data);
+#ifndef DISABLE_ARC_SUPPORT
 	uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data);
+#endif
 
 	// sync motions
 	uint8_t mc_dwell(motion_data_t *block_data);
@@ -90,10 +100,16 @@ extern "C"
 
 	// mixed/special motions
 	uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+#ifndef DISABLE_PROBING_SUPPORT
 	uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
+#endif
 
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
+
+#ifdef ENABLE_G39_H_MAPPING
+	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
+#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler

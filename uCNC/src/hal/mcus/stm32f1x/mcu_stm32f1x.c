@@ -114,22 +114,22 @@ static uint8_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	mcu_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	mcu_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	mcu_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	mcu_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	mcu_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	mcu_clear_output(SERVO5);
 #endif
 }
@@ -216,7 +216,7 @@ static void mcu_input_isr(void)
 		mcu_controls_changed_cb();
 	}
 #endif
-#if (PROBE_EXTIBITMASK & 0x01)
+#if (PROBE_EXTIBITMASK != 0)
 	if (EXTI->PR & PROBE_EXTIBITMASK)
 	{
 		mcu_probe_changed_cb();
@@ -290,37 +290,37 @@ void osSystickHandler(void)
 
 	switch (servo_counter)
 	{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		servo_start_timeout(mcu_servos[0]);
 		mcu_set_output(SERVO0);
 		break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
 		mcu_set_output(SERVO1);
 		servo_start_timeout(mcu_servos[1]);
 		break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
 		mcu_set_output(SERVO2);
 		servo_start_timeout(mcu_servos[2]);
 		break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
 		mcu_set_output(SERVO3);
 		servo_start_timeout(mcu_servos[3]);
 		break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
 		mcu_set_output(SERVO4);
 		servo_start_timeout(mcu_servos[4]);
 		break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
 		mcu_set_output(SERVO5);
 		servo_start_timeout(mcu_servos[5]);
@@ -477,15 +477,6 @@ void mcu_putc(char c)
 #endif
 }
 
-char mcu_getc(void)
-{
-#ifdef MCU_HAS_UART
-	return COM_INREG;
-#else
-	return 0;
-#endif
-}
-
 void mcu_init(void)
 {
 	mcu_clocks_init();
@@ -564,7 +555,7 @@ void mcu_disable_probe_isr(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
 #endif
 }
 
@@ -575,7 +566,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
 
 	if ((1U << offset) & SERVOS_MASK)
 	{
@@ -600,9 +591,8 @@ uint8_t mcu_get_servo(uint8_t servo)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 1) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 
-	totalticks >>= 1;
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -612,6 +602,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 	*prescaller--;
 	*ticks = (uint16_t)totalticks;
+}
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
 }
 
 // starts a constant rate pulse at a given frequency.
@@ -661,8 +656,12 @@ void mcu_stop_itp_isr(void)
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
+}
+
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
 void mcu_rtc_init()

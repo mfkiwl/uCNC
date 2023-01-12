@@ -15,6 +15,10 @@
 
 #include "../cnc.h"
 
+#ifndef MAX_MODAL_GROUPS
+#define MAX_MODAL_GROUPS 14
+#endif
+
 #ifdef ECHO_CMD
 static bool protocol_busy;
 #endif
@@ -35,7 +39,15 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_settings)
 }
 #endif
 
-static void procotol_send_newline(void)
+#ifdef ENABLE_PARSER_MODULES
+// event_protocol_send_gcode_modes_handler
+WEAK_EVENT_HANDLER(protocol_send_gcode_modes)
+{
+	DEFAULT_EVENT_HANDLER(protocol_send_gcode_modes);
+}
+#endif
+
+static void protocol_send_newline(void)
 {
 	protocol_send_string(MSG_EOL);
 }
@@ -46,7 +58,7 @@ void protocol_send_ok(void)
 	protocol_busy = true;
 #endif
 	protocol_send_string(MSG_OK);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -59,7 +71,7 @@ void protocol_send_error(uint8_t error)
 #endif
 	protocol_send_string(MSG_ERROR);
 	serial_print_int(error);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -72,7 +84,7 @@ void protocol_send_alarm(int8_t alarm)
 #endif
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -109,7 +121,8 @@ void protocol_send_feedback(const char *__s)
 
 static uint8_t protocol_get_tools(void)
 {
-	uint8_t modalgroups[12];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[MAX_MODAL_GROUPS];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -219,11 +232,11 @@ void protocol_send_status(void)
 	{
 		switch (state)
 		{
+#if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
 			protocol_send_string(MSG_STATUS_DOOR);
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
-
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
 					serial_putc('2');
@@ -245,8 +258,17 @@ void protocol_send_status(void)
 				}
 			}
 			break;
-		case EXEC_HALT:
-			protocol_send_string(MSG_STATUS_ALARM);
+#endif
+		case EXEC_UNHOMED:
+		case EXEC_LIMITS:
+			if (!cnc_get_exec_state(EXEC_HOMING))
+			{
+				protocol_send_string(MSG_STATUS_ALARM);
+			}
+			else
+			{
+				protocol_send_string(MSG_STATUS_HOME);
+			}
 			break;
 		case EXEC_HOLD:
 			protocol_send_string(MSG_STATUS_HOLD);
@@ -265,7 +287,6 @@ void protocol_send_status(void)
 		case EXEC_JOG:
 			protocol_send_string(MSG_STATUS_JOG);
 			break;
-		case EXEC_RESUMING:
 		case EXEC_RUN:
 			protocol_send_string(MSG_STATUS_RUN);
 			break;
@@ -369,7 +390,7 @@ void protocol_send_status(void)
 	}
 
 	serial_putc('>');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -390,7 +411,7 @@ void protocol_send_gcode_coordsys(void)
 		serial_putc(':');
 		serial_print_fltarr(axis, AXIS_COUNT);
 		serial_putc(']');
-		procotol_send_newline();
+		protocol_send_newline();
 	}
 
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
@@ -400,33 +421,33 @@ void protocol_send_gcode_coordsys(void)
 		parser_get_coordsys(i, axis);
 		serial_print_fltarr(axis, AXIS_COUNT);
 		serial_putc(']');
-		procotol_send_newline();
+		protocol_send_newline();
 	}
 
 	protocol_send_string(__romstr__("[G28:"));
 	parser_get_coordsys(28, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 	protocol_send_string(__romstr__("[G30:"));
 	parser_get_coordsys(30, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 	protocol_send_string(__romstr__("[G92:"));
 	parser_get_coordsys(92, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 #ifdef AXIS_TOOL
 	protocol_send_string(__romstr__("[TLO:"));
 	parser_get_coordsys(254, axis);
 	serial_print_flt(axis[0]);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #endif
 	protocol_send_probe_result(parser_get_probe_result());
 
@@ -447,7 +468,7 @@ void protocol_send_probe_result(uint8_t val)
 	serial_putc(':');
 	serial_putc('0' + val);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -467,7 +488,8 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 
 void protocol_send_gcode_modes(void)
 {
-	uint8_t modalgroups[12];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[MAX_MODAL_GROUPS];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -479,7 +501,8 @@ void protocol_send_gcode_modes(void)
 
 	protocol_send_string(__romstr__("[GC:"));
 
-	for (uint8_t i = 0; i < 7; i++)
+	protocol_send_parser_modalstate('G', modalgroups[0], modalgroups[12]);
+	for (uint8_t i = 1; i < 7; i++)
 	{
 		protocol_send_parser_modalstate('G', modalgroups[i], 0);
 	}
@@ -492,6 +515,21 @@ void protocol_send_gcode_modes(void)
 	{
 		protocol_send_parser_modalstate('G', modalgroups[7], 0);
 	}
+
+#ifdef ENABLE_G39_H_MAPPING
+	if (modalgroups[13])
+	{
+		protocol_send_parser_modalstate('G', 39, 2);
+	}
+	else
+	{
+		protocol_send_parser_modalstate('G', 39, 1);
+	}
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
+	EVENT_INVOKE(protocol_send_gcode_modes, NULL);
+#endif
 
 	for (uint8_t i = 8; i < 11; i++)
 	{
@@ -510,7 +548,7 @@ void protocol_send_gcode_modes(void)
 	serial_print_int(spindle);
 
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -522,7 +560,7 @@ void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t val
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_int(value);
-	procotol_send_newline();
+	protocol_send_newline();
 }
 
 static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
@@ -531,7 +569,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_flt(value);
-	procotol_send_newline();
+	protocol_send_newline();
 }
 
 void protocol_send_start_blocks(void)
@@ -551,7 +589,7 @@ void protocol_send_start_blocks(void)
 		}
 		else
 		{
-			procotol_send_newline();
+			protocol_send_newline();
 			break;
 		}
 	}
@@ -567,7 +605,7 @@ void protocol_send_start_blocks(void)
 		}
 		else
 		{
-			procotol_send_newline();
+			protocol_send_newline();
 			break;
 		}
 	}
@@ -609,6 +647,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
 	protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
 	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
@@ -648,10 +689,15 @@ void protocol_send_cnc_settings(void)
 		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.delta_base_radius);
+	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
+	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
+	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
 #endif
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
@@ -767,15 +813,10 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_SYSTEM_INFO
-#if (KINEMATIC == KINEMATIC_CARTESIAN)
-#define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_COREXY)
-#define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_DELTA)
-#define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
-#else
-#define KINEMATIC_INFO ""
+#ifndef KINEMATIC_TYPE_STR
+#define KINEMATIC_TYPE_STR "UK" /*undefined kynematic*/
 #endif
+#define KINEMATIC_INFO KINEMATIC_TYPE_STR STRGIFY(AXIS_COUNT) ","
 #define TOOLS_INFO "T" STRGIFY(TOOL_COUNT) ","
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -838,6 +879,24 @@ void protocol_send_pins_states(void)
 #define FASTMATH_INFO ""
 #endif
 
+#ifdef RAM_ONLY_SETTINGS
+#define SETTINGS_INFO "RAM,"
+#else
+#define SETTINGS_INFO ""
+#endif
+
+#ifdef ENABLE_IO_ALARM_DEBUG
+#define IODBG_INFO "IODBG,"
+#else
+#define IODBG_INFO ""
+#endif
+
+#ifdef FORCE_SOFT_POLLING
+#define SPOLL_INFO "SP,"
+#else
+#define SPOLL_INFO ""
+#endif
+
 #ifdef ENABLE_LINACT_PLANNER
 #define LINPLAN_INFO "LP,"
 #else
@@ -860,6 +919,12 @@ void protocol_send_pins_states(void)
 #define PPI_INFO ""
 #endif
 
+#ifdef ENABLE_G39_H_MAPPING
+#define HMAP_INFO "HMAP,"
+#else
+#define HMAP_INFO ""
+#endif
+
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
 #define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
@@ -871,12 +936,12 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 {
-	//custom handler
+	// custom handler
 	protocol_send_cnc_info_delegate_event_t *ptr = protocol_send_cnc_info_event;
 	while (ptr != NULL)
 	{

@@ -88,97 +88,97 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	// software PWM
 	if (++pwm_counter < 127)
 	{
-#if !(PWM0 < 0)
+#if ASSERT_PIN(PWM0)
 		if (pwm_counter > esp8266_pwm[0])
 		{
 			mcu_clear_output(PWM0);
 		}
 #endif
-#if !(PWM1 < 0)
+#if ASSERT_PIN(PWM1)
 		if (pwm_counter > esp8266_pwm[1])
 		{
 			mcu_clear_output(PWM1);
 		}
 #endif
-#if !(PWM2 < 0)
+#if ASSERT_PIN(PWM2)
 		if (pwm_counter > esp8266_pwm[2])
 		{
 			mcu_clear_output(PWM2);
 		}
 #endif
-#if !(PWM3 < 0)
+#if ASSERT_PIN(PWM3)
 		if (pwm_counter > esp8266_pwm[3])
 		{
 			mcu_clear_output(PWM3);
 		}
 #endif
-#if !(PWM4 < 0)
+#if ASSERT_PIN(PWM4)
 		if (pwm_counter > esp8266_pwm[4])
 		{
 			mcu_clear_output(PWM4);
 		}
 #endif
-#if !(PWM5 < 0)
+#if ASSERT_PIN(PWM5)
 		if (pwm_counter > esp8266_pwm[5])
 		{
 			mcu_clear_output(PWM5);
 		}
 #endif
-#if !(PWM6 < 0)
+#if ASSERT_PIN(PWM6)
 		if (pwm_counter > esp8266_pwm[6])
 		{
 			mcu_clear_output(PWM6);
 		}
 #endif
-#if !(PWM7 < 0)
+#if ASSERT_PIN(PWM7)
 		if (pwm_counter > esp8266_pwm[7])
 		{
 			mcu_clear_output(PWM7);
 		}
 #endif
-#if !(PWM8 < 0)
+#if ASSERT_PIN(PWM8)
 		if (pwm_counter > esp8266_pwm[8])
 		{
 			mcu_clear_output(PWM8);
 		}
 #endif
-#if !(PWM9 < 0)
+#if ASSERT_PIN(PWM9)
 		if (pwm_counter > esp8266_pwm[9])
 		{
 			mcu_clear_output(PWM9);
 		}
 #endif
-#if !(PWM10 < 0)
+#if ASSERT_PIN(PWM10)
 		if (pwm_counter > esp8266_pwm[10])
 		{
 			mcu_clear_output(PWM10);
 		}
 #endif
-#if !(PWM11 < 0)
+#if ASSERT_PIN(PWM11)
 		if (pwm_counter > esp8266_pwm[11])
 		{
 			mcu_clear_output(PWM11);
 		}
 #endif
-#if !(PWM12 < 0)
+#if ASSERT_PIN(PWM12)
 		if (pwm_counter > esp8266_pwm[12])
 		{
 			mcu_clear_output(PWM12);
 		}
 #endif
-#if !(PWM13 < 0)
+#if ASSERT_PIN(PWM13)
 		if (pwm_counter > esp8266_pwm[13])
 		{
 			mcu_clear_output(PWM13);
 		}
 #endif
-#if !(PWM14 < 0)
+#if ASSERT_PIN(PWM14)
 		if (pwm_counter > esp8266_pwm[14])
 		{
 			mcu_clear_output(PWM14);
 		}
 #endif
-#if !(PWM15 < 0)
+#if ASSERT_PIN(PWM15)
 		if (pwm_counter > esp8266_pwm[15])
 		{
 			mcu_clear_output(PWM15);
@@ -188,97 +188,97 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	else
 	{
 		pwm_counter = 0;
-#if !(PWM0 < 0)
+#if ASSERT_PIN(PWM0)
 		if (esp8266_pwm[0])
 		{
 			mcu_set_output(PWM0);
 		}
 #endif
-#if !(PWM1 < 0)
+#if ASSERT_PIN(PWM1)
 		if (esp8266_pwm[1])
 		{
 			mcu_set_output(PWM1);
 		}
 #endif
-#if !(PWM2 < 0)
+#if ASSERT_PIN(PWM2)
 		if (esp8266_pwm[2])
 		{
 			mcu_set_output(PWM2);
 		}
 #endif
-#if !(PWM3 < 0)
+#if ASSERT_PIN(PWM3)
 		if (esp8266_pwm[3])
 		{
 			mcu_set_output(PWM3);
 		}
 #endif
-#if !(PWM4 < 0)
+#if ASSERT_PIN(PWM4)
 		if (esp8266_pwm[4])
 		{
 			mcu_set_output(PWM4);
 		}
 #endif
-#if !(PWM5 < 0)
+#if ASSERT_PIN(PWM5)
 		if (esp8266_pwm[5])
 		{
 			mcu_set_output(PWM5);
 		}
 #endif
-#if !(PWM6 < 0)
+#if ASSERT_PIN(PWM6)
 		if (esp8266_pwm[6])
 		{
 			mcu_set_output(PWM6);
 		}
 #endif
-#if !(PWM7 < 0)
+#if ASSERT_PIN(PWM7)
 		if (esp8266_pwm[7])
 		{
 			mcu_set_output(PWM7);
 		}
 #endif
-#if !(PWM8 < 0)
+#if ASSERT_PIN(PWM8)
 		if (esp8266_pwm[8])
 		{
 			mcu_set_output(PWM8);
 		}
 #endif
-#if !(PWM9 < 0)
+#if ASSERT_PIN(PWM9)
 		if (esp8266_pwm[9])
 		{
 			mcu_set_output(PWM9);
 		}
 #endif
-#if !(PWM10 < 0)
+#if ASSERT_PIN(PWM10)
 		if (esp8266_pwm[10])
 		{
 			mcu_set_output(PWM10);
 		}
 #endif
-#if !(PWM11 < 0)
+#if ASSERT_PIN(PWM11)
 		if (esp8266_pwm[11])
 		{
 			mcu_set_output(PWM11);
 		}
 #endif
-#if !(PWM12 < 0)
+#if ASSERT_PIN(PWM12)
 		if (esp8266_pwm[12])
 		{
 			mcu_set_output(PWM12);
 		}
 #endif
-#if !(PWM13 < 0)
+#if ASSERT_PIN(PWM13)
 		if (esp8266_pwm[13])
 		{
 			mcu_set_output(PWM13);
 		}
 #endif
-#if !(PWM14 < 0)
+#if ASSERT_PIN(PWM14)
 		if (esp8266_pwm[14])
 		{
 			mcu_set_output(PWM14);
 		}
 #endif
-#if !(PWM15 < 0)
+#if ASSERT_PIN(PWM15)
 		if (esp8266_pwm[15])
 		{
 			mcu_set_output(PWM15);
@@ -496,16 +496,6 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return esp8266_uart_rx_ready();
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
@@ -519,19 +509,6 @@ void mcu_putc(char c)
 #endif
 
 	esp8266_uart_write(c);
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-	while (!mcu_rx_ready())
-		;
-	return esp8266_uart_read();
 }
 #endif
 
@@ -589,6 +566,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+}
+
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
@@ -622,6 +604,11 @@ void mcu_stop_itp_isr(void)
 uint32_t mcu_millis()
 {
 	return mcu_runtime_ms;
+}
+
+uint32_t mcu_micros()
+{
+	return (uint32_t)esp_system_get_time();
 }
 
 void esp8266_delay_us(uint16_t delay)
@@ -739,10 +726,10 @@ void mcu_eeprom_flush(void)
  * */
 
 #ifndef mcu_config_timeout
-	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	esp8266_oneshot_reload = (128000UL/timeout);
+	esp8266_oneshot_reload = (128000UL / timeout);
 }
 #endif
 

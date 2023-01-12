@@ -46,37 +46,52 @@
 
 #if (IC74HC595_COUNT != 0)
 uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
-
-void ic74hc595_shift_io_pins(void)
+static volatile uint8_t ic74hc595_update_lock;
+void __attribute__((weak)) ic74hc595_shift_io_pins(void)
 {
-	mcu_clear_output(IC74HC595_LATCH);
-	for (uint8_t i = IC74HC595_COUNT; i != 0;)
+	uint8_t pins[IC74HC595_COUNT];
+	if (!ic74hc595_update_lock++)
 	{
-		i--;
-		uint8_t pinbyte = ic74hc595_io_pins[i];
-		for (uint8_t j = 0; j < 8; j++)
+		do
 		{
+			memcpy(pins, ic74hc595_io_pins, IC74HC595_COUNT);
+			mcu_clear_output(IC74HC595_LATCH);
+			for (uint8_t i = IC74HC595_COUNT; i != 0;)
+			{
+				i--;
+#if (defined(IC74HC595_USE_HW_SPI) && defined(MCU_HAS_SPI))
+				mcu_spi_xmit(pins[i]);
+#else
+				uint8_t pinbyte = pins[i];
+				for (uint8_t j = 0x80; j != 0; j >>= 1)
+				{
+#if (IC74HC595_DELAY_CYCLES)
+					ic74hc595_delay();
+#endif
+					mcu_clear_output(IC74HC595_CLK);
+					if (pinbyte & j)
+					{
+						mcu_set_output(IC74HC595_DATA);
+					}
+					else
+					{
+						mcu_clear_output(IC74HC595_DATA);
+					}
+					mcu_set_output(IC74HC595_CLK);
+				}
+#endif
+			}
+#if (IC74HC595_DELAY_CYCLES)
 			ic74hc595_delay();
-			mcu_clear_output(IC74HC595_CLK);
-			if (pinbyte & 0x80)
-			{
-				mcu_set_output(IC74HC595_DATA);
-			}
-			else
-			{
-				mcu_clear_output(IC74HC595_DATA);
-			}
-			pinbyte <<= 1;
-			mcu_set_output(IC74HC595_CLK);
-		}
+#endif
+			mcu_set_output(IC74HC595_LATCH);
+		} while (--ic74hc595_update_lock);
 	}
-	ic74hc595_delay();
-	mcu_set_output(IC74HC595_LATCH);
 }
 
 FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 {
-#if !(STEP0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[STEP0_IO_BYTEOFFSET] |= STEP0_IO_BITMASK;
@@ -86,7 +101,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP0_IO_BYTEOFFSET] &= ~STEP0_IO_BITMASK;
 	}
 #endif
-#if !(STEP1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP1_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[STEP1_IO_BYTEOFFSET] |= STEP1_IO_BITMASK;
@@ -96,7 +111,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP1_IO_BYTEOFFSET] &= ~STEP1_IO_BITMASK;
 	}
 #endif
-#if !(STEP2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP2_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[STEP2_IO_BYTEOFFSET] |= STEP2_IO_BITMASK;
@@ -106,7 +121,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP2_IO_BYTEOFFSET] &= ~STEP2_IO_BITMASK;
 	}
 #endif
-#if !(STEP3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP3_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[STEP3_IO_BYTEOFFSET] |= STEP3_IO_BITMASK;
@@ -116,7 +131,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP3_IO_BYTEOFFSET] &= ~STEP3_IO_BITMASK;
 	}
 #endif
-#if !(STEP4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP4_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[STEP4_IO_BYTEOFFSET] |= STEP4_IO_BITMASK;
@@ -126,7 +141,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP4_IO_BYTEOFFSET] &= ~STEP4_IO_BITMASK;
 	}
 #endif
-#if !(STEP5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP5_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[STEP5_IO_BYTEOFFSET] |= STEP5_IO_BITMASK;
@@ -136,7 +151,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP5_IO_BYTEOFFSET] &= ~STEP5_IO_BITMASK;
 	}
 #endif
-#if !(STEP6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP6_IO_OFFSET)
 	if (mask & (1 << 6))
 	{
 		ic74hc595_io_pins[STEP6_IO_BYTEOFFSET] |= STEP6_IO_BITMASK;
@@ -146,7 +161,7 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 		ic74hc595_io_pins[STEP6_IO_BYTEOFFSET] &= ~STEP6_IO_BITMASK;
 	}
 #endif
-#if !(STEP7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP7_IO_OFFSET)
 	if (mask & (1 << 7))
 	{
 		ic74hc595_io_pins[STEP7_IO_BYTEOFFSET] |= STEP7_IO_BITMASK;
@@ -162,49 +177,49 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 
 FORCEINLINE void ic74hc595_toggle_steps(uint8_t mask)
 {
-#if !(STEP0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[STEP0_IO_BYTEOFFSET] ^= STEP0_IO_BITMASK;
 	}
 #endif
-#if !(STEP1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP1_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[STEP1_IO_BYTEOFFSET] ^= STEP1_IO_BITMASK;
 	}
 #endif
-#if !(STEP2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP2_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[STEP2_IO_BYTEOFFSET] ^= STEP2_IO_BITMASK;
 	}
 #endif
-#if !(STEP3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP3_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[STEP3_IO_BYTEOFFSET] ^= STEP3_IO_BITMASK;
 	}
 #endif
-#if !(STEP4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP4_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[STEP4_IO_BYTEOFFSET] ^= STEP4_IO_BITMASK;
 	}
 #endif
-#if !(STEP5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP5_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[STEP5_IO_BYTEOFFSET] ^= STEP5_IO_BITMASK;
 	}
 #endif
-#if !(STEP6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP6_IO_OFFSET)
 	if (mask & (1 << 6))
 	{
 		ic74hc595_io_pins[STEP6_IO_BYTEOFFSET] ^= STEP6_IO_BITMASK;
 	}
 #endif
-#if !(STEP7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP7_IO_OFFSET)
 	if (mask & (1 << 7))
 	{
 		ic74hc595_io_pins[STEP7_IO_BYTEOFFSET] ^= STEP7_IO_BITMASK;
@@ -216,7 +231,7 @@ FORCEINLINE void ic74hc595_toggle_steps(uint8_t mask)
 
 FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 {
-#if !(DIR0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[DIR0_IO_BYTEOFFSET] |= DIR0_IO_BITMASK;
@@ -226,7 +241,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR0_IO_BYTEOFFSET] &= ~DIR0_IO_BITMASK;
 	}
 #endif
-#if !(DIR1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR1_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[DIR1_IO_BYTEOFFSET] |= DIR1_IO_BITMASK;
@@ -236,7 +251,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR1_IO_BYTEOFFSET] &= ~DIR1_IO_BITMASK;
 	}
 #endif
-#if !(DIR2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR2_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[DIR2_IO_BYTEOFFSET] |= DIR2_IO_BITMASK;
@@ -246,7 +261,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR2_IO_BYTEOFFSET] &= ~DIR2_IO_BITMASK;
 	}
 #endif
-#if !(DIR3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR3_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[DIR3_IO_BYTEOFFSET] |= DIR3_IO_BITMASK;
@@ -256,7 +271,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR3_IO_BYTEOFFSET] &= ~DIR3_IO_BITMASK;
 	}
 #endif
-#if !(DIR4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR4_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[DIR4_IO_BYTEOFFSET] |= DIR4_IO_BITMASK;
@@ -266,7 +281,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR4_IO_BYTEOFFSET] &= ~DIR4_IO_BITMASK;
 	}
 #endif
-#if !(DIR5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR5_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[DIR5_IO_BYTEOFFSET] |= DIR5_IO_BITMASK;
@@ -276,7 +291,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR5_IO_BYTEOFFSET] &= ~DIR5_IO_BITMASK;
 	}
 #endif
-#if !(DIR6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR6_IO_OFFSET)
 	if (mask & (1 << 6))
 	{
 		ic74hc595_io_pins[DIR6_IO_BYTEOFFSET] |= DIR6_IO_BITMASK;
@@ -286,7 +301,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 		ic74hc595_io_pins[DIR6_IO_BYTEOFFSET] &= ~DIR6_IO_BITMASK;
 	}
 #endif
-#if !(DIR7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DIR7_IO_OFFSET)
 	if (mask & (1 << 7))
 	{
 		ic74hc595_io_pins[DIR7_IO_BYTEOFFSET] |= DIR7_IO_BITMASK;
@@ -302,7 +317,7 @@ FORCEINLINE void ic74hc595_set_dirs(uint8_t mask)
 
 FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 {
-#if !(STEP0_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP0_EN_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[STEP0_EN_IO_BYTEOFFSET] |= STEP0_EN_IO_BITMASK;
@@ -312,7 +327,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP0_EN_IO_BYTEOFFSET] &= ~STEP0_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP1_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP1_EN_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[STEP1_EN_IO_BYTEOFFSET] |= STEP1_EN_IO_BITMASK;
@@ -322,7 +337,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP1_EN_IO_BYTEOFFSET] &= ~STEP1_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP2_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP2_EN_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[STEP2_EN_IO_BYTEOFFSET] |= STEP2_EN_IO_BITMASK;
@@ -332,7 +347,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP2_EN_IO_BYTEOFFSET] &= ~STEP2_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP3_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP3_EN_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[STEP3_EN_IO_BYTEOFFSET] |= STEP3_EN_IO_BITMASK;
@@ -342,7 +357,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP3_EN_IO_BYTEOFFSET] &= ~STEP3_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP4_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP4_EN_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[STEP4_EN_IO_BYTEOFFSET] |= STEP4_EN_IO_BITMASK;
@@ -352,7 +367,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP4_EN_IO_BYTEOFFSET] &= ~STEP4_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP5_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP5_EN_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[STEP5_EN_IO_BYTEOFFSET] |= STEP5_EN_IO_BITMASK;
@@ -362,7 +377,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP5_EN_IO_BYTEOFFSET] &= ~STEP5_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP6_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP6_EN_IO_OFFSET)
 	if (mask & (1 << 6))
 	{
 		ic74hc595_io_pins[STEP6_EN_IO_BYTEOFFSET] |= STEP6_EN_IO_BITMASK;
@@ -372,7 +387,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 		ic74hc595_io_pins[STEP6_EN_IO_BYTEOFFSET] &= ~STEP6_EN_IO_BITMASK;
 	}
 #endif
-#if !(STEP7_EN_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(STEP7_EN_IO_OFFSET)
 	if (mask & (1 << 7))
 	{
 		ic74hc595_io_pins[STEP7_EN_IO_BYTEOFFSET] |= STEP7_EN_IO_BITMASK;
@@ -388,7 +403,7 @@ FORCEINLINE void ic74hc595_enable_steppers(uint8_t mask)
 
 FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 {
-#if !(PWM0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[PWM0_IO_BYTEOFFSET] |= PWM0_IO_BITMASK;
@@ -398,7 +413,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM0_IO_BYTEOFFSET] &= ~PWM0_IO_BITMASK;
 	}
 #endif
-#if !(PWM1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM1_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[PWM1_IO_BYTEOFFSET] |= PWM1_IO_BITMASK;
@@ -408,7 +423,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM1_IO_BYTEOFFSET] &= ~PWM1_IO_BITMASK;
 	}
 #endif
-#if !(PWM2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM2_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[PWM2_IO_BYTEOFFSET] |= PWM2_IO_BITMASK;
@@ -418,7 +433,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM2_IO_BYTEOFFSET] &= ~PWM2_IO_BITMASK;
 	}
 #endif
-#if !(PWM3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM3_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[PWM3_IO_BYTEOFFSET] |= PWM3_IO_BITMASK;
@@ -428,7 +443,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM3_IO_BYTEOFFSET] &= ~PWM3_IO_BITMASK;
 	}
 #endif
-#if !(PWM4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM4_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[PWM4_IO_BYTEOFFSET] |= PWM4_IO_BITMASK;
@@ -438,7 +453,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM4_IO_BYTEOFFSET] &= ~PWM4_IO_BITMASK;
 	}
 #endif
-#if !(PWM5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM5_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[PWM5_IO_BYTEOFFSET] |= PWM5_IO_BITMASK;
@@ -448,7 +463,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM5_IO_BYTEOFFSET] &= ~PWM5_IO_BITMASK;
 	}
 #endif
-#if !(PWM6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM6_IO_OFFSET)
 	if (mask & (1 << 6))
 	{
 		ic74hc595_io_pins[PWM6_IO_BYTEOFFSET] |= PWM6_IO_BITMASK;
@@ -458,7 +473,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM6_IO_BYTEOFFSET] &= ~PWM6_IO_BITMASK;
 	}
 #endif
-#if !(PWM7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM7_IO_OFFSET)
 	if (mask & (1 << 7))
 	{
 		ic74hc595_io_pins[PWM7_IO_BYTEOFFSET] |= PWM7_IO_BITMASK;
@@ -468,7 +483,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM7_IO_BYTEOFFSET] &= ~PWM7_IO_BITMASK;
 	}
 #endif
-#if !(PWM8_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM8_IO_OFFSET)
 	if (mask & (1 << 8))
 	{
 		ic74hc595_io_pins[PWM8_IO_BYTEOFFSET] |= PWM8_IO_BITMASK;
@@ -478,7 +493,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM8_IO_BYTEOFFSET] &= ~PWM8_IO_BITMASK;
 	}
 #endif
-#if !(PWM9_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM9_IO_OFFSET)
 	if (mask & (1 << 9))
 	{
 		ic74hc595_io_pins[PWM9_IO_BYTEOFFSET] |= PWM9_IO_BITMASK;
@@ -488,7 +503,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM9_IO_BYTEOFFSET] &= ~PWM9_IO_BITMASK;
 	}
 #endif
-#if !(PWM10_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM10_IO_OFFSET)
 	if (mask & (1 << 10))
 	{
 		ic74hc595_io_pins[PWM10_IO_BYTEOFFSET] |= PWM10_IO_BITMASK;
@@ -498,7 +513,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM10_IO_BYTEOFFSET] &= ~PWM10_IO_BITMASK;
 	}
 #endif
-#if !(PWM11_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM11_IO_OFFSET)
 	if (mask & (1 << 11))
 	{
 		ic74hc595_io_pins[PWM11_IO_BYTEOFFSET] |= PWM11_IO_BITMASK;
@@ -508,7 +523,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM11_IO_BYTEOFFSET] &= ~PWM11_IO_BITMASK;
 	}
 #endif
-#if !(PWM12_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM12_IO_OFFSET)
 	if (mask & (1 << 12))
 	{
 		ic74hc595_io_pins[PWM12_IO_BYTEOFFSET] |= PWM12_IO_BITMASK;
@@ -518,7 +533,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM12_IO_BYTEOFFSET] &= ~PWM12_IO_BITMASK;
 	}
 #endif
-#if !(PWM13_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM13_IO_OFFSET)
 	if (mask & (1 << 13))
 	{
 		ic74hc595_io_pins[PWM13_IO_BYTEOFFSET] |= PWM13_IO_BITMASK;
@@ -528,7 +543,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM13_IO_BYTEOFFSET] &= ~PWM13_IO_BITMASK;
 	}
 #endif
-#if !(PWM14_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM14_IO_OFFSET)
 	if (mask & (1 << 14))
 	{
 		ic74hc595_io_pins[PWM14_IO_BYTEOFFSET] |= PWM14_IO_BITMASK;
@@ -538,7 +553,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 		ic74hc595_io_pins[PWM14_IO_BYTEOFFSET] &= ~PWM14_IO_BITMASK;
 	}
 #endif
-#if !(PWM15_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM15_IO_OFFSET)
 	if (mask & (1 << 15))
 	{
 		ic74hc595_io_pins[PWM15_IO_BYTEOFFSET] |= PWM15_IO_BITMASK;
@@ -554,7 +569,7 @@ FORCEINLINE void ic74hc595_set_pwms(uint16_t mask)
 
 FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 {
-#if !(SERVO0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{
 		ic74hc595_io_pins[SERVO0_IO_BYTEOFFSET] |= SERVO0_IO_BITMASK;
@@ -564,7 +579,7 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 		ic74hc595_io_pins[SERVO0_IO_BYTEOFFSET] &= ~SERVO0_IO_BITMASK;
 	}
 #endif
-#if !(SERVO1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO1_IO_OFFSET)
 	if (mask & (1 << 1))
 	{
 		ic74hc595_io_pins[SERVO1_IO_BYTEOFFSET] |= SERVO1_IO_BITMASK;
@@ -574,7 +589,7 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 		ic74hc595_io_pins[SERVO1_IO_BYTEOFFSET] &= ~SERVO1_IO_BITMASK;
 	}
 #endif
-#if !(SERVO2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO2_IO_OFFSET)
 	if (mask & (1 << 2))
 	{
 		ic74hc595_io_pins[SERVO2_IO_BYTEOFFSET] |= SERVO2_IO_BITMASK;
@@ -584,7 +599,7 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 		ic74hc595_io_pins[SERVO2_IO_BYTEOFFSET] &= ~SERVO2_IO_BITMASK;
 	}
 #endif
-#if !(SERVO3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO3_IO_OFFSET)
 	if (mask & (1 << 3))
 	{
 		ic74hc595_io_pins[SERVO3_IO_BYTEOFFSET] |= SERVO3_IO_BITMASK;
@@ -594,7 +609,7 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 		ic74hc595_io_pins[SERVO3_IO_BYTEOFFSET] &= ~SERVO3_IO_BITMASK;
 	}
 #endif
-#if !(SERVO4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO4_IO_OFFSET)
 	if (mask & (1 << 4))
 	{
 		ic74hc595_io_pins[SERVO4_IO_BYTEOFFSET] |= SERVO4_IO_BITMASK;
@@ -604,7 +619,7 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 		ic74hc595_io_pins[SERVO4_IO_BYTEOFFSET] &= ~SERVO4_IO_BITMASK;
 	}
 #endif
-#if !(SERVO5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(SERVO5_IO_OFFSET)
 	if (mask & (1 << 5))
 	{
 		ic74hc595_io_pins[SERVO5_IO_BYTEOFFSET] |= SERVO5_IO_BITMASK;
@@ -622,7 +637,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 {
 	switch (pin - DOUT_PINS_OFFSET)
 	{
-#if !(DOUT0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT0_IO_OFFSET)
 	case 0:
 		if (state)
 		{
@@ -634,7 +649,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT1_IO_OFFSET)
 	case 1:
 		if (state)
 		{
@@ -646,7 +661,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT2_IO_OFFSET)
 	case 2:
 		if (state)
 		{
@@ -658,7 +673,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT3_IO_OFFSET)
 	case 3:
 		if (state)
 		{
@@ -670,7 +685,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT4_IO_OFFSET)
 	case 4:
 		if (state)
 		{
@@ -682,7 +697,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT5_IO_OFFSET)
 	case 5:
 		if (state)
 		{
@@ -694,7 +709,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT6_IO_OFFSET)
 	case 6:
 		if (state)
 		{
@@ -706,7 +721,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT7_IO_OFFSET)
 	case 7:
 		if (state)
 		{
@@ -718,7 +733,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT8_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT8_IO_OFFSET)
 	case 8:
 		if (state)
 		{
@@ -730,7 +745,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT9_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT9_IO_OFFSET)
 	case 9:
 		if (state)
 		{
@@ -742,7 +757,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT10_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT10_IO_OFFSET)
 	case 10:
 		if (state)
 		{
@@ -754,7 +769,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT11_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT11_IO_OFFSET)
 	case 11:
 		if (state)
 		{
@@ -766,7 +781,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT12_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT12_IO_OFFSET)
 	case 12:
 		if (state)
 		{
@@ -778,7 +793,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT13_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT13_IO_OFFSET)
 	case 13:
 		if (state)
 		{
@@ -790,7 +805,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT14_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT14_IO_OFFSET)
 	case 14:
 		if (state)
 		{
@@ -802,7 +817,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT15_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT15_IO_OFFSET)
 	case 15:
 		if (state)
 		{
@@ -814,7 +829,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT16_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT16_IO_OFFSET)
 	case 16:
 		if (state)
 		{
@@ -826,7 +841,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT17_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT17_IO_OFFSET)
 	case 17:
 		if (state)
 		{
@@ -838,7 +853,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT18_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT18_IO_OFFSET)
 	case 18:
 		if (state)
 		{
@@ -850,7 +865,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT19_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT19_IO_OFFSET)
 	case 19:
 		if (state)
 		{
@@ -862,7 +877,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT20_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT20_IO_OFFSET)
 	case 20:
 		if (state)
 		{
@@ -874,7 +889,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT21_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT21_IO_OFFSET)
 	case 21:
 		if (state)
 		{
@@ -886,7 +901,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT22_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT22_IO_OFFSET)
 	case 22:
 		if (state)
 		{
@@ -898,7 +913,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT23_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT23_IO_OFFSET)
 	case 23:
 		if (state)
 		{
@@ -910,7 +925,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT24_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT24_IO_OFFSET)
 	case 24:
 		if (state)
 		{
@@ -922,7 +937,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT25_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT25_IO_OFFSET)
 	case 25:
 		if (state)
 		{
@@ -934,7 +949,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT26_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT26_IO_OFFSET)
 	case 26:
 		if (state)
 		{
@@ -946,7 +961,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT27_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT27_IO_OFFSET)
 	case 27:
 		if (state)
 		{
@@ -958,7 +973,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT28_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT28_IO_OFFSET)
 	case 28:
 		if (state)
 		{
@@ -970,7 +985,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT29_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT29_IO_OFFSET)
 	case 29:
 		if (state)
 		{
@@ -982,7 +997,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT30_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT30_IO_OFFSET)
 	case 30:
 		if (state)
 		{
@@ -994,7 +1009,7 @@ FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 		}
 		break;
 #endif
-#if !(DOUT31_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(DOUT31_IO_OFFSET)
 	case 31:
 		if (state)
 		{

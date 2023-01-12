@@ -51,22 +51,22 @@ static FORCEINLINE void mcu_clear_servos()
 	// disables the interrupt of OCIEB (leaves only OCIEA)
 	RTC_TIMSK = (1U << RTC_OCIEA);
 	RTC_TIFR = (1U << 2);
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	mcu_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	mcu_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	mcu_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	mcu_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	mcu_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	mcu_clear_output(SERVO5);
 #endif
 }
@@ -89,42 +89,42 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 
 	switch (servo_counter)
 	{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		RTC_OCRB = mcu_servos[0];
 		servo_loops = mcu_servos_loops[0];
 		mcu_set_output(SERVO0);
 		break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
 		RTC_OCRB = mcu_servos[1];
 		servo_loops = mcu_servos_loops[1];
 		mcu_set_output(SERVO1);
 		break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
 		RTC_OCRB = mcu_servos[2];
 		servo_loops = mcu_servos_loops[2];
 		mcu_set_output(SERVO2);
 		break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
 		RTC_OCRB = mcu_servos[3];
 		servo_loops = mcu_servos_loops[3];
 		mcu_set_output(SERVO3);
 		break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
 		RTC_OCRB = mcu_servos[4];
 		servo_loops = mcu_servos_loops[4];
 		mcu_set_output(SERVO4);
 		break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
 		RTC_OCRB = mcu_servos[5];
 		servo_loops = mcu_servos_loops[5];
@@ -471,27 +471,27 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
 	uint8_t scaled = RTC_OCRA;
-	mcu_servos_val[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+	mcu_servos_val[servo - SERVO_PINS_OFFSET] = value;
 	if (value < 64)
 	{
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 0;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 0;
 		scaled >>= 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6) + scaled;
 	}
 	else if (value < 192)
 	{
 		value -= 64;
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 1;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 7);
 	}
 	else
 	{
 		value -= 192;
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 2;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 2;
 		scaled >>= 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6);
 	}
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
+	mcu_servos[servo - SERVO_PINS_OFFSET] = scaled;
 #endif
 }
 
@@ -502,7 +502,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
 	if ((1U << offset) & SERVOS_MASK)
 	{
 		return mcu_servos_val[offset];
@@ -520,12 +520,6 @@ void mcu_putc(char c)
 #ifndef ENABLE_SYNC_TX
 	SETBIT(UCSRB, UDRIE);
 #endif
-}
-
-char mcu_getc(void)
-{
-	loop_until_bit_is_set(UCSRA, RXC);
-	return COM_INREG;
 }
 
 // RealTime
@@ -603,6 +597,62 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	clocks--;
 	*ticks = (uint16_t)MIN(clocks, 0xFFFF);
 }
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	float freq;
+#if (ITP_TIMER == 2)
+	switch (prescaller & 0x07)
+	{
+	case 1:
+		freq = (float)F_CPU;
+		break;
+	case 2:
+		freq = (float)(F_CPU >> 3);
+		break;
+	case 3:
+		freq = (float)(F_CPU >> 5);
+		break;
+	case 4:
+		freq = (float)(F_CPU >> 6);
+		break;
+	case 5:
+		freq = (float)(F_CPU >> 7);
+		break;
+	case 6:
+		freq = (float)(F_CPU >> 8);
+		break;
+	case 7:
+		freq = (float)(F_CPU >> 10);
+		break;
+	default:
+		return 0;
+	}
+#else
+	switch (prescaller & 0x07)
+	{
+	case 1:
+		freq = (float)F_CPU;
+		break;
+	case 2:
+		freq = (float)(F_CPU >> 3);
+		break;
+	case 3:
+		freq = (float)(F_CPU >> 6);
+		break;
+	case 4:
+		freq = (float)(F_CPU >> 8);
+		break;
+	case 5:
+		freq = (float)(F_CPU >> 10);
+		break;
+	default:
+		return 0;
+	}
+#endif
+
+	return (freq / (float)(ticks + 1));
+}
 /*
 		initializes the pulse ISR
 		In Arduino this is done in TIMER1
@@ -657,6 +707,15 @@ uint32_t mcu_millis()
 {
 	uint32_t val = mcu_runtime_ms;
 	return val;
+}
+
+uint32_t mcu_micros()
+{
+	uint32_t rtc_elapsed = RTC_TCNT;
+	uint32_t ms = mcu_runtime_ms;
+
+	rtc_elapsed = ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
+	return rtc_elapsed;
 }
 
 void mcu_start_rtc()

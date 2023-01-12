@@ -214,6 +214,28 @@ extern "C"
 	//#define GCODE_ACCEPT_WORD_E
 
 	/**
+	 * Shrink µCNC 
+	 * It's possible to shrink µCNC by disable some core features:
+	 *   - arc support (G2,G3,G17,G18,G19)
+	 *   - probing (G38.x and if enabled G39,G39.x)
+	 *   - coordinate systems (G55 to G59.3, G54 remains active) and home  and non volatile storage for these systems
+	 *   - home commands (G28 and G30)
+	 *   - disable G10. This affects coordinate systems and home as it's not possible to define them.
+	 */
+	// #define DISABLE_ARC_SUPPORT
+	// #define DISABLE_PROBING_SUPPORT
+	// #define DISABLE_COORD_SYS_SUPPORT
+	// #define DISABLE_HOME_SUPPORT
+	// #define DISABLE_G10_SUPPORT
+	// #define DISABLE_PATH_MODES
+
+	/**
+	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
+	 * */
+
+	// #define ENABLE_RT_SYNC_MOTIONS
+
+	/**
 	 * Uncomment to enable module extensions
 	 * */
 #define ENABLE_MAIN_LOOP_MODULES
@@ -254,6 +276,32 @@ extern "C"
 #ifdef ENABLE_SKEW_COMPENSATION
 // uncomment to correct only in the xy axis
 //#define SKEW_COMPENSATION_XY_ONLY
+#endif
+
+/**
+ * Uncomment to enable surface height mapping compensation
+ * This enables G39 gcode and is useful for PCB milling and similar jobs
+ * It uses a 9 point matrix and bilinear interpolation to compensate for Z height deformations
+ * To map a region do G39 X<left bottom corner> Y<left bottom corner> Z<max-depth> I<X region offset> J<Y region offset>
+ * G39.1 will disable HMAP
+ * G39.2 will re-enable it
+ * 
+ * It's an error if:
+ *  - I and J are missing
+ *  - I or J are negative
+ *  - Z is missing
+ *  - cutter radius compensation is active (not implemented)
+ * 
+ * The map will not be stored in memory and will be reset on any of the following conditions
+ *  - a hardware or software reset
+ *  - a homing command
+ **/
+// #define ENABLE_G39_H_MAPPING
+#ifdef ENABLE_G39_H_MAPPING
+// set the grid size factor
+// this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2
+// the minimum value is 2 (4 points) and the maximum is 6 (36 points)
+#define H_MAPING_GRID_FACTOR 3
 #endif
 
 	/**
@@ -333,7 +381,7 @@ extern "C"
 	/**
 	 * Runs a check for state change inside the scheduler. This is a failsafe
 	 * check to pin ISR checking The value sets the frequency of this safety
-	 * check that is executed every 2^(CONTROLS_SCHEDULE_CHECK) milliseconds. A
+	 * check that is executed every 2^(CTRL_SCHED_CHECK) milliseconds. A
 	 * negative value will disable this feature. The maximum is 7
 	 * */
 
@@ -359,6 +407,14 @@ extern "C"
 #ifndef DISABLE_PROBE
 // #define DISABLE_PROBE
 #endif
+
+/**
+ * 
+ * Uncomment to store the state of the limits, controls and probe states that tiggered and alarm
+ * This is useful to debug momentary faults
+ * 
+*/
+// #define ENABLE_IO_ALARM_DEBUG
 
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
@@ -431,13 +487,13 @@ extern "C"
  *
  * */
 #ifndef PWM_PINS_OFFSET
-#define PWM_PINS_OFFSET 24
+#define PWM_PINS_OFFSET 25
 #endif
 #ifndef SERVO_PINS_OFFSET
-#define SERVO_PINS_OFFSET 40
+#define SERVO_PINS_OFFSET 41
 #endif
 #ifndef DOUT_PINS_OFFSET
-#define DOUT_PINS_OFFSET 46
+#define DOUT_PINS_OFFSET 47
 #endif
 #ifndef ANALOG_PINS_OFFSET
 #define ANALOG_PINS_OFFSET 114

@@ -43,6 +43,11 @@ extern "C"
 #include "avr/boardmap_uno.h"
 #endif
 
+#if (BOARD == BOARD_UNO_SHIELD_V3)
+#define MCU MCU_AVR
+#include "avr/boardmap_uno_shield_v3.h"
+#endif
+
 #if (BOARD == BOARD_X_CONTROLLER)
 #define MCU MCU_AVR
 #include "avr/boardmap_x_controller.h"
@@ -148,6 +153,7 @@ extern "C"
 #error Undefined board
 #endif
 
+#include "boardmap_overrides.h"
 #include "../mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus

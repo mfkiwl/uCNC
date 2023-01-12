@@ -45,8 +45,11 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
+	float target[AXIS_COUNT];
+	
+#ifndef DISABLE_ALL_LIMITS
 #ifndef DISABLE_Z_HOMING
-#if (defined(AXIS_Z) && (!(LIMIT_Z < 0) || !(LIMIT_Z2 < 0)))
+#if (defined(AXIS_Z) && (ASSERT_PIN(LIMIT_Z) || ASSERT_PIN(LIMIT_Z2)))
 	if (mc_home_axis(AXIS_Z, LIMIT_Z_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
@@ -55,7 +58,7 @@ uint8_t kinematics_home(void)
 #endif
 
 #ifndef DISABLE_X_HOMING
-#if (defined(AXIS_X) && (!(LIMIT_X < 0) || !(LIMIT_X2 < 0)))
+#if (defined(AXIS_X) && (ASSERT_PIN(LIMIT_X) || ASSERT_PIN(LIMIT_X2)))
 	if (mc_home_axis(AXIS_X, LIMIT_X_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_X;
@@ -64,7 +67,7 @@ uint8_t kinematics_home(void)
 #endif
 
 #ifndef DISABLE_Y_HOMING
-#if (defined(AXIS_Y) && (!(LIMIT_Y < 0) || !(LIMIT_Y2 < 0)))
+#if (defined(AXIS_Y) && (ASSERT_PIN(LIMIT_Y) || ASSERT_PIN(LIMIT_Y2)))
 	if (mc_home_axis(AXIS_Y, LIMIT_Y_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Y;
@@ -73,7 +76,7 @@ uint8_t kinematics_home(void)
 #endif
 
 #ifndef DISABLE_A_HOMING
-#if (defined(AXIS_A) && !(LIMIT_A < 0))
+#if (defined(AXIS_A) && ASSERT_PIN(LIMIT_A))
 	if (mc_home_axis(AXIS_A, LIMIT_A_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_A;
@@ -82,7 +85,7 @@ uint8_t kinematics_home(void)
 #endif
 
 #ifndef DISABLE_B_HOMING
-#if (defined(AXIS_B) && !(LIMIT_B < 0))
+#if (defined(AXIS_B) && ASSERT_PIN(LIMIT_B))
 	if (mc_home_axis(AXIS_B, LIMIT_B_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_B;
@@ -91,7 +94,7 @@ uint8_t kinematics_home(void)
 #endif
 
 #ifndef DISABLE_C_HOMING
-#if (defined(AXIS_C) && !(LIMIT_C < 0))
+#if (defined(AXIS_C) && ASSERT_PIN(LIMIT_C))
 	if (mc_home_axis(AXIS_C, LIMIT_C_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_C;
@@ -102,7 +105,6 @@ uint8_t kinematics_home(void)
 	cnc_unlock(true);
 	// flags homing clear by the unlock
 	cnc_set_exec_state(EXEC_HOMING);
-	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
@@ -117,7 +119,7 @@ uint8_t kinematics_home(void)
 	// starts offset and waits to finnish
 	mc_line(target, &block_data);
 	itp_sync();
-
+#endif
 	// unlocks the machine to go to offset
 	cnc_clear_exec_state(EXEC_HOMING);
 
