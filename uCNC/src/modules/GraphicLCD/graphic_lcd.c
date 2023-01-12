@@ -96,7 +96,7 @@ void graphic_lcd_add_menu(graphic_lcd_menu_item_t *menu)
 	ptr = menu;
 }
 
-void graphic_lcd_hold_menu(void* ptr) {}
+void graphic_lcd_hold_menu(void *ptr) {}
 const graphic_lcd_menu_t hold_menu __rom__ = {"hold", graphic_lcd_hold_menu};
 static const graphic_lcd_menu_item_t hold_menu_entry = {&hold_menu, NULL};
 
@@ -511,7 +511,7 @@ void graphic_lcd_system_status_screen(void)
 
 	// Tool
 	char tool[5];
-	uint8_t modalgroups[12];
+	uint8_t modalgroups[14];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -555,7 +555,8 @@ void graphic_lcd_system_status_screen(void)
 		case EXEC_DOOR:
 			rom_strcpy(&buff[3], MSG_STATUS_DOOR);
 			break;
-		case EXEC_HALT:
+		case EXEC_KILL:
+		case EXEC_UNHOMED:
 			rom_strcpy(&buff[3], MSG_STATUS_ALARM);
 			break;
 		case EXEC_HOLD:
@@ -567,7 +568,6 @@ void graphic_lcd_system_status_screen(void)
 		case EXEC_JOG:
 			rom_strcpy(&buff[3], MSG_STATUS_JOG);
 			break;
-		case EXEC_RESUMING:
 		case EXEC_RUN:
 			rom_strcpy(&buff[3], MSG_STATUS_RUN);
 			break;
@@ -636,7 +636,7 @@ void graphic_lcd_system_status_screen(void)
 			buff[i++] = 'C';
 		}
 	}
-	u8g2_DrawStr(&u8g2, LCDWIDTH / 2, y, buff);
+	u8g2_DrawStr(&u8g2, (LCDWIDTH >> 1), y, buff);
 }
 
 void graphic_lcd_system_draw_menu(void)
@@ -673,12 +673,15 @@ uint8_t graphic_lcd_loop(void *args, bool *handled)
 		switch (display_screen.current_screen)
 		{
 		case -1:
-			graphic_lcd_start_screen();
+			//graphic_lcd_start_screen();
 			break;
 		case 0:
-			graphic_lcd_system_status_screen();
 			graphic_lcd_system_draw_menu();
 			break;
+		}
+		
+		if(display_screen.current_screen>=0){
+			graphic_lcd_system_status_screen();
 		}
 
 		u8g2_NextPage(&u8g2);
@@ -692,8 +695,9 @@ CREATE_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
 
 uint8_t graphic_lcd_start(void *args, bool *handled)
 {
-	u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
+	// u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
 	// u8g2_Setup_ssd1306_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
+	u8g2_SetupBuffer_SDL_128x64_4(&u8g2, &u8g2_cb_r0);
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display
