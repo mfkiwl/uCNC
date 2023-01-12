@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #ifndef UCNC_MODULE_VERSION_1_5_0_PLUS
 #error "This module is not compatible with the current version of µCNC"
@@ -69,6 +70,35 @@ typedef struct
 } screen_options_t;
 
 static screen_options_t display_screen;
+
+typedef struct
+{
+	char menu_name[32];
+	void (*drawmenu)(void *);
+} graphic_lcd_menu_t;
+
+typedef struct graphic_lcd_menu_item_
+{
+	const graphic_lcd_menu_t *menu;
+	struct graphic_lcd_menu_item_ *next;
+} graphic_lcd_menu_item_t;
+
+static graphic_lcd_menu_item_t *graphic_lcd_menu_entry;
+
+void graphic_lcd_add_menu(graphic_lcd_menu_item_t *menu)
+{
+	graphic_lcd_menu_item_t *ptr = graphic_lcd_menu_entry;
+
+	while (ptr != NULL)
+	{
+		ptr = ptr->next;
+	}
+	ptr = menu;
+}
+
+void graphic_lcd_hold_menu(void* ptr) {}
+const graphic_lcd_menu_t hold_menu __rom__ = {"hold", graphic_lcd_hold_menu};
+static const graphic_lcd_menu_item_t hold_menu_entry = {&hold_menu, NULL};
 
 /**
  *
@@ -424,40 +454,45 @@ void graphic_lcd_system_status_screen(void)
 	kinematics_apply_reverse_transform(axis);
 
 #if (AXIS_COUNT >= 4)
+	memset(buff, 0, 32);
 	buff[0] = 'A';
-	ftoa(axis[3], &buff[2], 10);
+	ftoa(axis[3], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
 
 #if (AXIS_COUNT >= 5)
 	buff[0] = 'B';
-	ftoa(axis[4], &buff[2], 10);
+	ftoa(axis[4], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 6)
 	buff[0] = 'C';
-	ftoa(axis[5], &buff[2], 10);
+	ftoa(axis[5], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
 #endif
 	y -= FONTHEIGHT;
 #endif
 
+	memset(buff, 0, 32);
 	u8g2_DrawLine(&u8g2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
 
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
-	ftoa(axis[0], &buff[2], 10);
+	ftoa(axis[0], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
 #endif
 #if (AXIS_COUNT >= 2)
 	buff[0] = 'Y';
-	ftoa(axis[1], &buff[2], 10);
+	ftoa(axis[1], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
-	ftoa(axis[2], &buff[2], 10);
+	ftoa(axis[2], &buff[1], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
 #endif
+
+	memset(buff, 0, 32);
+	y -= (FONTHEIGHT + 3);
 
 	// units, feed and tool
 	if (g_settings.report_inches)
@@ -472,6 +507,7 @@ void graphic_lcd_system_status_screen(void)
 	// Realtime feed
 	ftoa(itp_get_rt_feed(), &buff[5], 10);
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	memset(buff, 0, 32);
 
 	// Tool
 	char tool[5];
@@ -487,8 +523,10 @@ void graphic_lcd_system_status_screen(void)
 	itoa(tool_get_speed(), &buff[2], 10);
 	strcat(buff, tool);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
-
+	memset(buff, 0, 32);
 	u8g2_DrawLine(&u8g2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+
+	y -= (FONTHEIGHT + 3);
 
 	// system status
 	uint8_t i;
@@ -539,6 +577,7 @@ void graphic_lcd_system_status_screen(void)
 		}
 	}
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	memset(buff, 0, 32);
 
 	uint8_t controls = io_get_controls();
 	uint8_t limits = io_get_limits();
@@ -602,9 +641,18 @@ void graphic_lcd_system_status_screen(void)
 
 void graphic_lcd_system_draw_menu(void)
 {
-	
+	char buff[32];
+	graphic_lcd_menu_item_t *ptr = graphic_lcd_menu_entry;
+	graphic_lcd_menu_t menu;
+
+	while (ptr != NULL)
+	{
+		rom_memcpy(&menu, ptr->menu, sizeof(graphic_lcd_menu_t));
+		u8g2_DrawStr(&u8g2, 1, FONTHEIGHT, menu.menu_name);
+		ptr = ptr->next;
+	}
 }
-*/
+
 #ifdef ENABLE_MAIN_LOOP_MODULES
 /**
  * Handles SD card in the main loop
@@ -650,6 +698,7 @@ uint8_t graphic_lcd_start(void *args, bool *handled)
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display
 	display_screen.screen_timeout = mcu_millis() + 5000;
+	display_screen.current_screen = -1;
 	u8g2_FirstPage(&u8g2);
 }
 
@@ -658,6 +707,8 @@ CREATE_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
 
 DECL_MODULE(graphic_lcd)
 {
+	graphic_lcd_add_menu(&hold_menu_entry);
+
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
 	ADD_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
